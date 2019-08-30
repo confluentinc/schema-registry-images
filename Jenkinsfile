@@ -2,7 +2,7 @@
 
 dockerfile {
     dockerPush = true
-    dockerRepos = ['confluentinc/schema-registry',]
+    dockerRepos = ['confluentinc/schema-registry-image',]
     mvnPhase = 'package'
     mvnSkipDeploy = true
     nodeLabel = 'docker-oraclejdk8-compose'
