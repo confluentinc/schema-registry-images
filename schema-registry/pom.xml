@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.confluent.schema-registry-images</groupId>
+        <artifactId>schema-registry-images-parent</artifactId>
+        <version>5.3.1-SNAPSHOT</version>
+    </parent>
+
+    <groupId>io.confluent.schema-registry-images</groupId>
+    <artifactId>cp-schema-registry</artifactId>
+    <name>Schema Registry Docker Image</name>
+
+    <properties>
+        <docker.skip-build>false</docker.skip-build>
+        <docker.skip-test>false</docker.skip-test>
+    </properties>
+</project>
