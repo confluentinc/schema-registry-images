@@ -3,7 +3,7 @@
 dockerfile {
     dockerPush = false
     dockerRepos = ['confluentinc/cp-schema-registry',]
-    mvnPhase = 'package'
+    mvnPhase = 'package integration-test'
     mvnSkipDeploy = true
     nodeLabel = 'docker-oraclejdk8-compose-swarm'
     slackChannel = 'tools-notifications' //TODO: change to correct team
