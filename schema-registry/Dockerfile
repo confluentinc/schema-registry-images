@@ -32,7 +32,7 @@ LABEL io.confluent.docker.build.number=$BUILD_NUMBER
 ARG CONFLUENT_VERSION
 ARG CONFLUENT_PACKAGES_REPO
 ARG CONFLUENT_PLATFORM_LABEL
-ARG ALLOW_UNSIGNED
+
 
 ENV COMPONENT=schema-registry
 
@@ -42,23 +42,8 @@ EXPOSE 8081
 RUN echo "===> Installing ${COMPONENT}..." \
     && yum -q -y update \
     && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
-        if [ "x${ALLOW_UNSIGNED}" = "xtrue" ]; then \
-        echo "===> GPG signatures are disabled for SNAPSHOT builds..." \
-        && printf "[Confluent.dist] \n\
-name=Confluent repository (dist) \n\
-baseurl=${CONFLUENT_PACKAGES_REPO}/rpm/${CONFLUENT_VERSION}/7 \n\
-gpgcheck=0 \n\
-enabled=1 \n\
-\n\
-[Confluent] \n\
-name=Confluent repository \n\
-baseurl=${CONFLUENT_PACKAGES_REPO}/rpm/${CONFLUENT_VERSION}/ \n\
-gpgcheck=0 \n\
-enabled=1 " > /etc/yum.repos.d/confluent.repo; \
-    else \
-        echo "===> Using Confluent's archive.key..." \
-        && rpm --import ${CONFLUENT_PACKAGES_REPO}/rpm/${CONFLUENT_VERSION}/archive.key \
-        && printf "[Confluent.dist] \n\
+    && rpm --import ${CONFLUENT_PACKAGES_REPO}/rpm/${CONFLUENT_VERSION}/archive.key \
+    && printf "[Confluent.dist] \n\
 name=Confluent repository (dist) \n\
 baseurl=${CONFLUENT_PACKAGES_REPO}/7 \n\
 gpgcheck=1 \n\
@@ -71,7 +56,6 @@ baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
 gpgcheck=1 \n\
 gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
 enabled=1 " > /etc/yum.repos.d/confluent.repo; \
-    fi \
     && yum install -y \
         confluent-${COMPONENT}-${CONFLUENT_VERSION}${CONFLUENT_PLATFORM_LABEL} \
         confluent-control-center-${CONFLUENT_VERSION}${CONFLUENT_PLATFORM_LABEL} \
