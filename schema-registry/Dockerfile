@@ -42,7 +42,7 @@ EXPOSE 8081
 RUN echo "===> Installing ${COMPONENT}..." \
     && yum -q -y update \
     && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
-    && rpm --import ${CONFLUENT_PACKAGES_REPO}/rpm/${CONFLUENT_VERSION}/archive.key \
+    && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
     && printf "[Confluent.dist] \n\
 name=Confluent repository (dist) \n\
 baseurl=${CONFLUENT_PACKAGES_REPO}/7 \n\
@@ -57,9 +57,9 @@ gpgcheck=1 \n\
 gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
 enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && yum install -y \
-        confluent-${COMPONENT}-${CONFLUENT_VERSION}${CONFLUENT_PLATFORM_LABEL} \
-        confluent-control-center-${CONFLUENT_VERSION}${CONFLUENT_PLATFORM_LABEL} \
-        confluent-security-${CONFLUENT_VERSION}${CONFLUENT_PLATFORM_LABEL} \
+        confluent-${COMPONENT}-${CONFLUENT_VERSION} \
+        confluent-control-center-${CONFLUENT_VERSION} \
+        confluent-security-${CONFLUENT_VERSION} \
     && echo "===> clean up ..."  \
     && yum clean all \
     && rm -rf /tmp/* \
