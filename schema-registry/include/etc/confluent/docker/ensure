@@ -16,9 +16,33 @@
 
 . /etc/confluent/docker/bash-config
 
+if [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL-}" ]]
+then
+    echo "===> Check if Zookeeper is healthy ..."
+    cub zk-ready "$SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL" "${SCHEMA_REGISTRY_CUB_ZK_TIMEOUT:-40}"
+fi
+
 echo "===> Check if Kafka is healthy ..."
 
-cub kafka-ready "${CONTROL_CENTER_REPLICATION_FACTOR}" \
-  "${CONTROL_CENTER_CUB_KAFKA_TIMEOUT:-300}" \
-  -b "${CONTROL_CENTER_BOOTSTRAP_SERVERS}" \
-  --config "${CONTROL_CENTER_CONFIG_DIR}/admin.properties"
+if [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL-}" ]] && [[ $SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL != "PLAINTEXT" ]]
+then
+    cub kafka-ready \
+        "${SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS:-1}" \
+        "${SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT:-40}" \
+        -b "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS}" \
+        --config /etc/"${COMPONENT}"/admin.properties
+else
+    if [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL-}" ]]
+    then
+        cub kafka-ready \
+            "${SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS:-1}" \
+            "${SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT:-40}" \
+            -z "$SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL"
+    elif [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS-}" ]]
+    then
+        cub kafka-ready \
+            "${KAFKA_REST_CUB_KAFKA_MIN_BROKERS:-1}" \
+            "${KAFKA_REST_CUB_KAFKA_TIMEOUT:-40}" \
+            -b "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS}"
+    fi
+fi
