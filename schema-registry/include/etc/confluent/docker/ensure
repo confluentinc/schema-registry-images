@@ -41,8 +41,8 @@ else
     elif [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS-}" ]]
     then
         cub kafka-ready \
-            "${KAFKA_REST_CUB_KAFKA_MIN_BROKERS:-1}" \
-            "${KAFKA_REST_CUB_KAFKA_TIMEOUT:-40}" \
+            "${SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS:-1}" \
+            "${SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT:-40}" \
             -b "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS}"
     fi
 fi
