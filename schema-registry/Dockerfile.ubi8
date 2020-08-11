@@ -65,6 +65,10 @@ enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && yum install -y \
         confluent-${COMPONENT}-${CONFLUENT_VERSION} \
         confluent-control-center-${CONFLUENT_VERSION} \
+        # We are installing confluent-telemetry package explicitly because
+        # Schema Registry's deb/rpm packages cannot directly depend on
+        # confluent-telemetry package as Schema Registry is Open Source.
+        confluent-telemetry-${CONFLUENT_VERSION} \
         confluent-security-${CONFLUENT_VERSION} \
     && echo "===> clean up ..."  \
     && yum clean all \
