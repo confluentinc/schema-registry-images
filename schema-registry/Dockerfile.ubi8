@@ -65,6 +65,7 @@ enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && yum install -y \
         confluent-${COMPONENT}-${CONFLUENT_VERSION} \
         confluent-control-center-${CONFLUENT_VERSION} \
+        confluent-telemetry-${CONFLUENT_VERSION} \
         confluent-security-${CONFLUENT_VERSION} \
     && echo "===> clean up ..."  \
     && yum clean all \
