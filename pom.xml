@@ -38,5 +38,6 @@
 
     <properties>
         <component.name>schema-registry</component.name>
+        <io.confluent.schema-registry-images.version>6.2.0-0</io.confluent.schema-registry-images.version>
     </properties>
 </project>
