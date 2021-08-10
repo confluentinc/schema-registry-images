@@ -28,6 +28,7 @@ LABEL version=$GIT_COMMIT
 LABEL release=$PROJECT_VERSION
 LABEL name=$ARTIFACT_ID
 LABEL summary="Confluent Schema Registry provides a RESTful interface for developers to define standard schemas for their events, share them across the organization and safely evolve them in a way that is backward compatible and future proof."
+LABEL description="Confluent Schema Registry provides a RESTful interface for developers to define standard schemas for their events, share them across the organization and safely evolve them in a way that is backward compatible and future proof."
 LABEL io.confluent.docker=true
 LABEL io.confluent.docker.git.id=$GIT_COMMIT
 ARG BUILD_NUMBER=-1
