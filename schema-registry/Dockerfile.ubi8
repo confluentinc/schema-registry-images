@@ -75,7 +75,7 @@ enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && echo "===> Setting up ${COMPONENT} dirs" \
     && mkdir -p /etc/${COMPONENT}/secrets /usr/logs \
     && chown appuser:appuser -R /etc/${COMPONENT}/secrets /usr/logs \
-    && chmod -R ag+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets
+    && chmod -R g+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets
 
 VOLUME ["/etc/${COMPONENT}/secrets"]
 
