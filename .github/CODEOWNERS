@@ -1,5 +1,6 @@
 # See go/codeowners - automatically generated for confluentinc/schema-registry-images:
 *	@Clarence97
+* @confluentinc/data-governance
 *	@ConfluentJenkins
 *	@SamehTawfik
 *	@amitkgupta
