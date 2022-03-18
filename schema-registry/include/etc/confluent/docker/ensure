@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+set -x
 
 . /etc/confluent/docker/bash-config
 
@@ -26,20 +27,24 @@ echo "===> Check if Kafka is healthy ..."
 
 if [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL-}" ]] && [[ $SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL != "PLAINTEXT" ]]
 then
+   echo "here 1"
     cub kafka-ready \
         "${SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS:-1}" \
         "${SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT:-40}" \
         -b "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS}" \
         --config /etc/"${COMPONENT}"/admin.properties
 else
+  echo "here 2"
     if [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL-}" ]]
     then
+      echo "here 3"
         cub kafka-ready \
             "${SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS:-1}" \
             "${SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT:-40}" \
             -z "$SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL"
     elif [[ -n "${SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS-}" ]]
     then
+      echo "here 4"
         cub kafka-ready \
             "${SCHEMA_REGISTRY_CUB_KAFKA_MIN_BROKERS:-1}" \
             "${SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT:-40}" \
