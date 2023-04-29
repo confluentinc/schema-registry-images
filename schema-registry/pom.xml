@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.confluent.schema-registry-images</groupId>
         <artifactId>schema-registry-images-parent</artifactId>
-        <version>7.1.8-0</version>
+        <version>7.1.8-17</version>
     </parent>
 
     <groupId>io.confluent.schema-registry-images</groupId>
