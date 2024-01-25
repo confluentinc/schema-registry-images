@@ -79,11 +79,21 @@ enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && chown appuser:root -R /etc/${COMPONENT} /usr/logs \
     && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets
 
-RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
-
 VOLUME ["/etc/${COMPONENT}/secrets"]
 
 COPY --chown=appuser:appuser include/etc/confluent/docker /etc/confluent/docker
+
+# Remove setuid/setgid binaries
+RUN chmod g-s usr/bin/chage usr/bin/gpasswd usr/bin/ksu usr/bin/mount \
+    usr/bin/newgrp usr/bin/su usr/bin/umount usr/bin/write \
+    usr/libexec/dbus-1/dbus-daemon-launch-helper \
+    usr/libexec/utempter/utempter usr/sbin/pam_timestamp_check \
+    usr/sbin/unix_chkpwd
+RUN chmod a-s usr/bin/chage usr/bin/gpasswd usr/bin/ksu usr/bin/mount \
+    usr/bin/newgrp usr/bin/su usr/bin/umount usr/bin/write \
+    usr/libexec/dbus-1/dbus-daemon-launch-helper \
+    usr/libexec/utempter/utempter usr/sbin/pam_timestamp_check \
+    usr/sbin/unix_chkpwd
 
 USER appuser
 
