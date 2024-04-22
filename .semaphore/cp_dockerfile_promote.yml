@@ -121,7 +121,7 @@ blocks:
             - export OS_TYPE="ubi8"
             - export DOCKER_REPO="confluentinc/cp-schema-registry"
             - export PROMOTED_TAG="$PROMOTED_TAG_PREFIX$OS_TAG"
-            - docker manifest create $DOCKER_REPO:$PROMOTED_TAG $DOCKER_REPO:$PROMOTED_TAG$AMD_ARCH
+            - docker manifest create $DOCKER_REPO:$PROMOTED_TAG $DOCKER_REPO:$PROMOTED_TAG$AMD_ARCH $DOCKER_REPO:$PROMOTED_TAG$ARM_ARCH
             - docker manifest push $DOCKER_REPO:$PROMOTED_TAG
             - >-
               if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ "ubi*" ]]; then
