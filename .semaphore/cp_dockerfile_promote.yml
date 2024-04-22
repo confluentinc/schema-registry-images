@@ -80,8 +80,6 @@ blocks:
                   docker tag $DOCKER_REPO:$PROMOTED_TAG $DOCKER_REPO:latest-$OS_TYPE$AMD_ARCH
                   docker push $DOCKER_REPO:latest-$OS_TYPE$AMD_ARCH
               fi
-  - name: Create Manifest
-    dependencies: ["Promote AMD"]
   - name: Promote ARM
     dependencies: []
     task:
@@ -127,11 +125,6 @@ blocks:
             - docker manifest push $DOCKER_REPO:$PROMOTED_TAG
             - >-
               if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ "ubi*" ]]; then
-                  docker manifest create $DOCKER_REPO:$CONFLUENT_VERSION $DOCKER_REPO:$CONFLUENT_VERSION$AMD_ARCH
-            - docker manifest create $DOCKER_REPO:$PROMOTED_TAG $DOCKER_REPO:$PROMOTED_TAG$AMD_ARCH $DOCKER_REPO:$PROMOTED_TAG$ARM_ARCH
-            - docker manifest push $DOCKER_REPO:$PROMOTED_TAG
-            - >-
-              if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ "ubi*" ]]; then
                   docker manifest create $DOCKER_REPO:$CONFLUENT_VERSION $DOCKER_REPO:$CONFLUENT_VERSION$AMD_ARCH $DOCKER_REPO:$CONFLUENT_VERSION$ARM_ARCH
                   docker manifest push $DOCKER_REPO:$CONFLUENT_VERSION
                   export APPLIED="true"
@@ -139,10 +132,6 @@ blocks:
             - >-
               if [[ $UPDATE_LATEST_TAG ]]; then
                   if [[ $APPLIED ]]; then
-                  docker manifest create $DOCKER_REPO:latest $DOCKER_REPO:latest$AMD_ARCH
-                  docker manifest push $DOCKER_REPO:latest
-                  fi
-                  docker manifest create $DOCKER_REPO:latest-$OS_TYPE $DOCKER_REPO:latest-$OS_TYPE$AMD_ARCH
                   docker manifest create $DOCKER_REPO:latest $DOCKER_REPO:latest$AMD_ARCH $DOCKER_REPO:latest$ARM_ARCH
                   docker manifest push $DOCKER_REPO:latest
                   fi
