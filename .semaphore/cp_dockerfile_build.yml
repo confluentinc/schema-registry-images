@@ -84,6 +84,7 @@ global_job_config:
       - export DOCKER_REPOS="confluentinc/cp-schema-registry"
       - export DOCKER_DEV_TAG="dev-$BRANCH_TAG-$BUILD_NUMBER"
       - export AMD_ARCH=.amd64
+      - export ARM_ARCH=.arm64
 blocks:
   - name: Build, Test, & Scan AMD
     dependencies: []
@@ -141,6 +142,63 @@ blocks:
             - sign-images $PROD_IMAGE_NAME:$PACKAGE_TAG
   - name: Create Manifest and Maven Deploy
     dependencies: ["Deploy AMD confluentinc/cp-schema-registry"]
+  - name: Build & Test ARM
+    dependencies: []
+    run:
+      # don't run the tests on non-functional changes...
+      when: "change_in('/', {exclude: ['/.deployed-versions/', '.github/']})"
+    task:
+      agent:
+        machine:
+          type: s1-prod-ubuntu20-04-arm64-1
+      jobs:
+        - name: Build & Test ubi8
+          commands:
+            - export OS_TAG="-ubi8"
+            - export DOCKER_DEV_FULL_IMAGES=$DOCKER_DEV_REGISTRY${DOCKER_REPOS// /:$DOCKER_DEV_TAG$OS_TAG $DOCKER_DEV_REGISTRY}:$DOCKER_DEV_TAG$OS_TAG
+            - export ARM_DOCKER_DEV_FULL_IMAGES=${DOCKER_DEV_FULL_IMAGES// /$ARM_ARCH }$ARM_ARCH
+            - export OS_PACKAGES_URL=$(echo "$PACKAGES_URL" | sed "s/PACKAGE_TYPE/rpm/g")
+            - export PACKAGING_BUILD_ARGS="$PACKAGING_BUILD_ARGS -DCONFLUENT_PACKAGES_REPO=$OS_PACKAGES_URL"
+            - mvn -Dmaven.wagon.http.retryHandler.count=3 --batch-mode -P jenkins,docker clean package dependency:analyze validate -U -Ddocker.registry=$DOCKER_DEV_REGISTRY -Ddocker.upstream-registry=$DOCKER_UPSTREAM_REGISTRY
+              -DBUILD_NUMBER=$BUILD_NUMBER -DGIT_COMMIT=$GIT_COMMIT -Ddocker.tag=$DOCKER_DEV_TAG$OS_TAG$ARM_ARCH -Ddocker.upstream-tag=$DOCKER_UPSTREAM_TAG$OS_TAG -Darch.type=$ARM_ARCH -Ddocker.os_type=ubi8
+              $PACKAGING_BUILD_ARGS
+            - . cache-maven store
+            - for image in $ARM_DOCKER_DEV_FULL_IMAGES; do echo "Pushing $image" && docker push $image; done
+      epilogue:
+        always:
+          commands:
+            - . publish-test-results
+            - artifact push workflow target/test-results
+            - artifact push workflow target --destination target-ARM
+  - name: Deploy ARM confluentinc/cp-schema-registry
+    dependencies: ["Build & Test ARM"]
+    run:
+      when: "branch = 'master' or branch =~ '[0-9]+\\.[0-9]+\\.[0-9]+'"
+    task:
+      agent:
+        machine:
+          type: s1-prod-ubuntu20-04-arm64-1
+      jobs:
+        - name: Deploy ARM confluentinc/cp-schema-registry ubi8
+          commands:
+            - export OS_TAG="-ubi8"
+            - export PROD_IMAGE_NAME=${DOCKER_PROD_REGISTRY}confluentinc/cp-schema-registry
+            - export GIT_COMMIT_TAG=$GIT_COMMIT$OS_TAG$ARM_ARCH
+            - export BRANCH_BUILD_TAG=$BRANCH_TAG-$BUILD_NUMBER$OS_TAG$ARM_ARCH
+            - export DEV_IMAGE_FULL=${DOCKER_DEV_REGISTRY}confluentinc/cp-schema-registry:$DOCKER_DEV_TAG$OS_TAG$ARM_ARCH
+            - docker pull $DEV_IMAGE_FULL
+            - docker tag $DEV_IMAGE_FULL $PROD_IMAGE_NAME:$GIT_COMMIT_TAG
+            - docker tag $DEV_IMAGE_FULL $PROD_IMAGE_NAME:$BRANCH_BUILD_TAG
+            - docker push $PROD_IMAGE_NAME:$GIT_COMMIT_TAG
+            - docker push $PROD_IMAGE_NAME:$BRANCH_BUILD_TAG
+            - sign-images $PROD_IMAGE_NAME:$GIT_COMMIT_TAG
+            - sign-images $PROD_IMAGE_NAME:$BRANCH_BUILD_TAG
+            - export PACKAGE_TAG=$BRANCH_TAG-$PACKAGING_BUILD_NUMBER$OS_TAG$ARM_ARCH
+            - docker tag $DEV_IMAGE_FULL $PROD_IMAGE_NAME:$PACKAGE_TAG
+            - docker push $PROD_IMAGE_NAME:$PACKAGE_TAG
+            - sign-images $PROD_IMAGE_NAME:$PACKAGE_TAG
+  - name: Create Manifest and Maven Deploy
+    dependencies: ["Deploy AMD confluentinc/cp-schema-registry", "Deploy ARM confluentinc/cp-schema-registry"]
     run:
       when: "branch = 'master' or branch =~ '[0-9]+\\.[0-9]+\\.[0-9]+'"
     task:
@@ -155,17 +213,17 @@ blocks:
               do
                 export OS_TAG="-ubi8"
                 export GIT_TAG=$GIT_COMMIT$OS_TAG
-                docker manifest create $image:$GIT_TAG $image:$GIT_TAG$AMD_ARCH
+                docker manifest create $image:$GIT_TAG $image:$GIT_TAG$AMD_ARCH $image:$GIT_TAG$ARM_ARCH
                 docker manifest push $image:$GIT_TAG
                 docker pull $image:$GIT_TAG
                 sign-images $image:$GIT_TAG
                 export BRANCH_BUILD_TAG=$BRANCH_TAG-$BUILD_NUMBER$OS_TAG
-                docker manifest create $image:$BRANCH_BUILD_TAG $image:$BRANCH_BUILD_TAG$AMD_ARCH
+                docker manifest create $image:$BRANCH_BUILD_TAG $image:$BRANCH_BUILD_TAG$AMD_ARCH $image:$BRANCH_BUILD_TAG$ARM_ARCH
                 docker manifest push $image:$BRANCH_BUILD_TAG
                 docker pull $image:$BRANCH_BUILD_TAG
                 sign-images $image:$BRANCH_BUILD_TAG
                 export PACKAGE_TAG=$BRANCH_TAG-$PACKAGING_BUILD_NUMBER$OS_TAG
-                docker manifest create $image:$PACKAGE_TAG $image:$PACKAGE_TAG$AMD_ARCH
+                docker manifest create $image:$PACKAGE_TAG $image:$PACKAGE_TAG$AMD_ARCH $image:$PACKAGE_TAG$ARM_ARCH
                 docker manifest push $image:$PACKAGE_TAG
               done
 after_pipeline:
@@ -185,4 +243,5 @@ after_pipeline:
           - checkout
           - sem-version java 11
           - artifact pull workflow target-AMD
+          - artifact pull workflow target-ARM
           - emit-sonarqube-data --run_only_sonar_scan
