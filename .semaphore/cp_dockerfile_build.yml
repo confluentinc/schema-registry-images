@@ -140,6 +140,8 @@ blocks:
             - docker tag $DEV_IMAGE_FULL $PROD_IMAGE_NAME:$PACKAGE_TAG
             - docker push $PROD_IMAGE_NAME:$PACKAGE_TAG
             - sign-images $PROD_IMAGE_NAME:$PACKAGE_TAG
+  - name: Create Manifest and Maven Deploy
+    dependencies: ["Deploy AMD confluentinc/cp-schema-registry"]
   - name: Build & Test ARM
     dependencies: []
     run:
