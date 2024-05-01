@@ -70,6 +70,7 @@ enabled=1 " > /etc/yum.repos.d/confluent.repo \
         # confluent-telemetry package as Schema Registry is Open Source.
         confluent-telemetry-${CONFLUENT_VERSION} \
         confluent-security-${CONFLUENT_VERSION} \
+        confluent-schema-registry-plugins-${CONFLUENT_VERSION} \
     && echo "===> clean up ..."  \
     && yum clean all \
     && rm -rf /tmp/* /etc/yum.repos.d/confluent.repo \
