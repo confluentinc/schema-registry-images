@@ -1,5 +1,5 @@
 name: schema-registry-images
-lang: python
+lang: unknown
 lang_version: unknown
 git:
   enable: true
