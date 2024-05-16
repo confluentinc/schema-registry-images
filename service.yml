@@ -1,6 +1,6 @@
 name: schema-registry-images
 lang: python
-lang_version: unknown
+lang_version: 3.7.3
 git:
   enable: true
 codeowners:
