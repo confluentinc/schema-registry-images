@@ -14,7 +14,7 @@ semaphore:
   build_arm: true
   sign_images: true
   os_types: ['ubi8']
-  nano_versions: true
+  nano_version: true
   use_packages: true
   cp_images: true
   push_latest: true
