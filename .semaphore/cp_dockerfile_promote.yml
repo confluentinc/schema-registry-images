@@ -97,7 +97,7 @@ blocks:
             - if [[ ! "$STAGING_CHECK_SUCCEED" ]]; then echo "Detected there was a staging repo in image $DOCKER_REPO:$PROMOTED_TAG refusing to promote." && exit 1; fi
             - docker push $DOCKER_REPO:$PROMOTED_TAG
             - >-
-              if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ "ubi*" ]]; then
+              if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ ubi* ]]; then
                   export APPLY_TAG=$CONFLUENT_VERSION$ARM_ARCH
                   docker tag $DOCKER_PROD_REGISTRY$DOCKER_REPO:$INTERNAL_IMAGE_TAG $DOCKER_REPO:$APPLY_TAG
                   docker push $DOCKER_REPO:$APPLY_TAG
@@ -125,7 +125,7 @@ blocks:
             - docker manifest create $DOCKER_REPO:$PROMOTED_TAG $DOCKER_REPO:$PROMOTED_TAG$AMD_ARCH $DOCKER_REPO:$PROMOTED_TAG$ARM_ARCH
             - docker manifest push $DOCKER_REPO:$PROMOTED_TAG
             - >-
-              if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ "ubi*" ]]; then
+              if [[ ! "$OS_TYPE" ]] || [[ "$OS_TYPE" =~ ubi* ]]; then
                   docker manifest create $DOCKER_REPO:$CONFLUENT_VERSION $DOCKER_REPO:$CONFLUENT_VERSION$AMD_ARCH $DOCKER_REPO:$CONFLUENT_VERSION$ARM_ARCH
                   docker manifest push $DOCKER_REPO:$CONFLUENT_VERSION
                   export APPLIED="true"
