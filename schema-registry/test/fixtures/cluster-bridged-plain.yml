@@ -1,119 +1,144 @@
----
-version: '2'
 networks:
-  zk:
+  sr:
     driver: bridge
 services:
-  zookeeper-1:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
-    networks:
-    - zk
-    ports:
-    - 22181:2181
-    - 22888:2888
-    - 23888:3888
-    labels:
-    - io.confluent.docker.testing=true
-  zookeeper-2:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_SERVER_ID: 2
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
-    networks:
-    - zk
-    ports:
-    - 32181:2181
-    - 32888:2888
-    - 33888:3888
-    labels:
-    - io.confluent.docker.testing=true
-  zookeeper-3:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_SERVER_ID: 3
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
-    networks:
-    - zk
-    ports:
-    - 42181:2181
-    - 42888:2888
-    - 43888:3888
-    labels:
-    - io.confluent.docker.testing=true
   kafka-1:
     image: confluentinc/cp-kafka:latest
     networks:
-    - zk
+    - sr
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-1:49152'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-1:49152,PLAINTEXT://kafka-1:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-1:9092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka-1:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
     - io.confluent.docker.testing=true
   kafka-2:
+    depends_on:
+      kafka-1:
+        condition: service_healthy
     image: confluentinc/cp-kafka:latest
     networks:
-    - zk
+    - sr
     environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '2@kafka-2:49152'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-2:49152,PLAINTEXT://kafka-2:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-2:9092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka-2:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
     - io.confluent.docker.testing=true
   kafka-3:
+    depends_on:
+      kafka-2:
+        condition: service_healthy
     image: confluentinc/cp-kafka:latest
     networks:
-    - zk
+    - sr
     environment:
-      KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '3@kafka-3:49152'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-3:49152,PLAINTEXT://kafka-3:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-3:9092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka-3:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
     - io.confluent.docker.testing=true
   schema-registry-1:
+    depends_on:
+      kafka-3:
+        condition: service_healthy
+    restart: on-failure:9
     image: confluentinc/cp-schema-registry:latest
     networks:
-    - zk
+    - sr
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092'
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-1
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
     ports:
     - 18081:8081
     labels:
     - io.confluent.docker.testing=true
   schema-registry-2:
+    depends_on:
+      schema-registry-1:
+        condition: service_healthy
+    restart: on-failure:9
     image: confluentinc/cp-schema-registry:latest
     networks:
-    - zk
+    - sr
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092'
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-2
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
     ports:
     - 28081:8081
     labels:
     - io.confluent.docker.testing=true
   schema-registry-3:
+    depends_on:
+      schema-registry-2:
+        condition: service_healthy
+    restart: on-failure:9
     image: confluentinc/cp-schema-registry:latest
     networks:
-    - zk
+    - sr
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092'
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-3
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
     ports:
     - 38081:8081
     labels:
