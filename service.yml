@@ -1,5 +1,5 @@
 name: schema-registry-images
-lang: python
+lang: unknown
 lang_version: unknown
 git:
   enable: true
@@ -74,3 +74,8 @@ semaphore:
             options:
               - 'True'
               - 'False'
+code_artifact:
+  enable: true
+  package_paths:
+    - maven-snapshots/maven/io.confluent.schema-registry-images/schema-registry-images-parent
+    - maven-snapshots/maven/io.confluent.schema-registry-images/cp-schema-registry
