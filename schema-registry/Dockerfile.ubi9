@@ -49,20 +49,20 @@ USER root
 RUN echo "===> Installing ${COMPONENT}..." \
     && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
     && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
-    && printf "[confluent] \n\
-    name=Confluent repository \n\
-    baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
-    gpgcheck=1 \n\
-    gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
-    enabled=1 " > /etc/yum.repos.d/confluent.repo \
+    && printf "[Confluent] \n\
+name=Confluent repository \n\
+baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
+gpgcheck=1 \n\
+gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
+enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && microdnf install -y \
-    confluent-${COMPONENT}-${CONFLUENT_VERSION} \
-    # We are installing confluent-telemetry package explicitly because
-    # Schema Registry's deb/rpm packages cannot directly depend on
-    # confluent-telemetry package as Schema Registry is Open Source.
-    confluent-telemetry-${CONFLUENT_VERSION} \
-    confluent-security-${CONFLUENT_VERSION} \
-    confluent-schema-registry-plugins-${CONFLUENT_VERSION} \
+        confluent-${COMPONENT}-${CONFLUENT_VERSION} \
+        # We are installing confluent-telemetry package explicitly because
+        # Schema Registry's deb/rpm packages cannot directly depend on
+        # confluent-telemetry package as Schema Registry is Open Source.
+        confluent-telemetry-${CONFLUENT_VERSION} \
+        confluent-security-${CONFLUENT_VERSION} \
+        confluent-schema-registry-plugins-${CONFLUENT_VERSION} \
     && echo "===> clean up ..."  \
     && microdnf clean all \
     && rm -rf /tmp/* /etc/yum.repos.d/confluent.repo \
