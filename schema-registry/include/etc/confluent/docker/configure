@@ -35,5 +35,5 @@ then
 fi
 
 ub render-template "/etc/confluent/docker/${COMPONENT}.properties.template" >> /etc/${COMPONENT}/${COMPONENT}.properties
-ub render-template "/etc/confluent/docker/log4j.properties.template" >> /etc/${COMPONENT}/log4j.properties
+ub render-template "/etc/confluent/docker/log4j2.properties.template" >> /etc/${COMPONENT}/log4j2.properties
 ub render-template "/etc/confluent/docker/admin.properties.template" >> /etc/${COMPONENT}/admin.properties
