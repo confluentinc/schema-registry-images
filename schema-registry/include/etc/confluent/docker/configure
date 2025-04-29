@@ -34,6 +34,6 @@ then
   fi
 fi
 
-ub template "/etc/confluent/docker/${COMPONENT}.properties.template" "/etc/${COMPONENT}/${COMPONENT}.properties"
-ub template "/etc/confluent/docker/log4j.properties.template" "/etc/${COMPONENT}/log4j.properties"
-ub template "/etc/confluent/docker/admin.properties.template" "/etc/${COMPONENT}/admin.properties"
+ub render-template "/etc/confluent/docker/${COMPONENT}.properties.template" >> "/etc/${COMPONENT}/${COMPONENT}.properties"
+ub render-template "/etc/confluent/docker/log4j.properties.template" >> "/etc/${COMPONENT}/log4j.properties"
+ub render-template "/etc/confluent/docker/admin.properties.template" >> "/etc/${COMPONENT}/admin.properties"
