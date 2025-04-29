@@ -49,7 +49,7 @@ USER root
 RUN echo "===> Installing ${COMPONENT}..." \
     && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
     && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
-    && printf "[Confluent] \n\
+    && printf "[confluent] \n\
     name=Confluent repository \n\
     baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
     gpgcheck=1 \n\
