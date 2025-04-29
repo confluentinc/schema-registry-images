@@ -16,7 +16,30 @@
 ARG DOCKER_UPSTREAM_REGISTRY
 ARG DOCKER_UPSTREAM_TAG=ubi9-latest
 
-FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java:${DOCKER_UPSTREAM_TAG}
+FROM ${DOCKER_UPSTREAM_REGISTRY:-}confluentinc/cp-base-java:${DOCKER_UPSTREAM_TAG} as builder
+
+ARG CONFLUENT_VERSION
+ARG CONFLUENT_PACKAGES_REPO
+ARG CONFLUENT_PLATFORM_LABEL
+
+# Install packages in a single layer and clean up
+RUN echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
+    && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
+    && printf "[Confluent] \n\
+    name=Confluent repository \n\
+    baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
+    gpgcheck=1 \n\
+    gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
+    enabled=1 " > /etc/yum.repos.d/confluent.repo \
+    && dnf install -y --setopt=install_weak_deps=False \
+    confluent-schema-registry-${CONFLUENT_VERSION} \
+    confluent-telemetry-${CONFLUENT_VERSION} \
+    confluent-security-${CONFLUENT_VERSION} \
+    confluent-schema-registry-plugins-${CONFLUENT_VERSION} \
+    && dnf clean all \
+    && rm -rf /tmp/* /var/cache/dnf/* /etc/yum.repos.d/confluent.repo
+
+FROM ${DOCKER_UPSTREAM_REGISTRY:-}confluentinc/cp-base-java:${DOCKER_UPSTREAM_TAG}
 
 ARG PROJECT_VERSION
 ARG ARTIFACT_ID
@@ -35,10 +58,6 @@ ARG BUILD_NUMBER=-1
 LABEL io.confluent.docker.build.number=$BUILD_NUMBER
 LABEL io.confluent.docker.git.repo="confluentinc/schema-registry-images"
 
-ARG CONFLUENT_VERSION
-ARG CONFLUENT_PACKAGES_REPO
-ARG CONFLUENT_PLATFORM_LABEL
-
 ENV COMPONENT=schema-registry
 
 # Default listener
@@ -46,30 +65,16 @@ EXPOSE 8081
 
 USER root
 
-RUN echo "===> Installing ${COMPONENT}..." \
-    && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
-    && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
-    && printf "[Confluent] \n\
-    name=Confluent repository \n\
-    baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
-    gpgcheck=1 \n\
-    gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
-    enabled=1 " > /etc/yum.repos.d/confluent.repo \
-    && microdnf install -y \
-    confluent-${COMPONENT}-${CONFLUENT_VERSION} \
-    # We are installing confluent-telemetry package explicitly because
-    # Schema Registry's deb/rpm packages cannot directly depend on
-    # confluent-telemetry package as Schema Registry is Open Source.
-    confluent-telemetry-${CONFLUENT_VERSION} \
-    confluent-security-${CONFLUENT_VERSION} \
-    confluent-schema-registry-plugins-${CONFLUENT_VERSION} \
-    && echo "===> clean up ..."  \
-    && microdnf clean all \
-    && rm -rf /tmp/* /etc/yum.repos.d/confluent.repo \
-    && echo "===> Setting up ${COMPONENT} dirs" \
-    && mkdir -p /etc/${COMPONENT}/secrets /usr/logs \
-    && chown appuser:root -R /etc/${COMPONENT} /usr/logs \
-    && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets
+# Copy only necessary files from builder
+COPY --from=builder /usr/bin/confluent-${COMPONENT} /usr/bin/
+COPY --from=builder /usr/share/confluent-${COMPONENT} /usr/share/
+COPY --from=builder /etc/confluent-${COMPONENT} /etc/
+
+# Setup directories with proper permissions
+RUN mkdir -p /etc/${COMPONENT}/secrets /usr/logs \
+    && chown -R appuser:appuser /etc/${COMPONENT} /usr/logs \
+    && chmod -R 755 /etc/${COMPONENT} \
+    && chmod -R 700 /etc/${COMPONENT}/secrets
 
 VOLUME ["/etc/${COMPONENT}/secrets"]
 

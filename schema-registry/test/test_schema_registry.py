@@ -7,13 +7,12 @@ import json
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.join(CURRENT_DIR, "fixtures", "debian", "schema-registry")
-KAFKA_READY = "bash -c 'cub kafka-ready {brokers} 40 -z $KAFKA_ZOOKEEPER_CONNECT && echo PASS || echo FAIL'"
+KAFKA_READY = "bash -c 'cub kafka-ready {brokers} 40 && echo PASS || echo FAIL'"
 HEALTH_CHECK = "bash -c 'cub sr-ready {host} {port} 20 && echo PASS || echo FAIL'"
 POST_SCHEMA_CHECK = """curl -X POST -i -H "Content-Type: application/vnd.schemaregistry.v1+json" \
     --data '{"schema": "{\\"type\\": \\"string\\"}"}' \
     %s:%s/subjects/%s/versions"""
 GET_SCHEMAS_CHECK = "bash -c 'curl -X GET -i {host}:{port}/subjects'"
-ZK_READY = "bash -c 'cub zk-ready {servers} 40 && echo PASS || echo FAIL'"
 KAFKA_CHECK = "bash -c 'kafkacat -L -b {host}:{port} -J' "
 
 JMX_CHECK = """bash -c "\
@@ -32,7 +31,6 @@ class ConfigTest(unittest.TestCase):
         cls.cluster = utils.TestCluster("config-test", FIXTURES_DIR, "standalone-config.yml")
         cls.cluster.start()
 
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper", ZK_READY.format(servers="localhost:2181"))
         assert "PASS" in cls.cluster.run_command_on_service("kafka", KAFKA_READY.format(brokers=1))
 
     @classmethod
@@ -67,12 +65,22 @@ class ConfigTest(unittest.TestCase):
     def test_default_logging_config(self):
         self.is_schema_registry_healthy_for_service("default-config")
 
-        log4j_props = self.cluster.run_command_on_service("default-config", "cat /etc/schema-registry/log4j.properties")
-        expected_log4j_props = """log4j.rootLogger=INFO, stdout
-
-            log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-            log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-            log4j.appender.stdout.layout.ConversionPattern=[%d] %p %m (%c)%n
+        log4j_props = self.cluster.run_command_on_service("default-config", "cat /etc/schema-registry/log4j2.yaml")
+        expected_log4j_props = """Configuration:
+  name: Log4j2
+  
+  Appenders:
+    Console:
+      name: stdout
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "[%d] %p %m (%c)%n"
+  
+  Loggers:
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: stdout
 
             """
         self.assertEquals(log4j_props.translate(None, string.whitespace), expected_log4j_props.translate(None, string.whitespace))
@@ -84,8 +92,6 @@ class StandaloneNetworkingTest(unittest.TestCase):
     def setUpClass(cls):
         cls.cluster = utils.TestCluster("standalone-network-test", FIXTURES_DIR, "standalone-network.yml")
         cls.cluster.start()
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-bridge", ZK_READY.format(servers="localhost:2181"))
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-host", ZK_READY.format(servers="localhost:32181"))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-bridge", KAFKA_READY.format(brokers=1))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-host", KAFKA_READY.format(brokers=1))
 
@@ -159,9 +165,6 @@ class ClusterBridgedNetworkTest(unittest.TestCase):
     def setUpClass(cls):
         cls.cluster = utils.TestCluster("cluster-bridged-test", FIXTURES_DIR, "cluster-bridged-plain.yml")
         cls.cluster.start()
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-1", ZK_READY.format(servers="zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181"))
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-2", ZK_READY.format(servers="zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181"))
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-3", ZK_READY.format(servers="zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181"))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-1", KAFKA_READY.format(brokers=1))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-2", KAFKA_READY.format(brokers=1))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-3", KAFKA_READY.format(brokers=1))
@@ -260,9 +263,6 @@ class ClusterHostNetworkTest(unittest.TestCase):
     def setUpClass(cls):
         cls.cluster = utils.TestCluster("cluster-host-test", FIXTURES_DIR, "cluster-host-plain.yml")
         cls.cluster.start()
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-1", ZK_READY.format(servers="localhost:22181,localhost:32181,localhost:42181"))
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-2", ZK_READY.format(servers="localhost:22181,localhost:32181,localhost:42181"))
-        assert "PASS" in cls.cluster.run_command_on_service("zookeeper-3", ZK_READY.format(servers="localhost:22181,localhost:32181,localhost:42181"))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-1", KAFKA_READY.format(brokers=1))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-2", KAFKA_READY.format(brokers=1))
         assert "PASS" in cls.cluster.run_command_on_service("kafka-3", KAFKA_READY.format(brokers=1))

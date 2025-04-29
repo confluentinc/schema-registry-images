@@ -1,93 +1,133 @@
----
-version: '2'
 services:
-  zookeeper-1:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_CLIENT_PORT: 22181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: localhost:22888:23888;localhost:32888:33888;localhost:42888:43888
-    network_mode: host
-    labels:
-    - io.confluent.docker.testing=true
-  zookeeper-2:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_SERVER_ID: 2
-      ZOOKEEPER_CLIENT_PORT: 32181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: localhost:22888:23888;localhost:32888:33888;localhost:42888:43888
-    network_mode: host
-    labels:
-    - io.confluent.docker.testing=true
-  zookeeper-3:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_SERVER_ID: 3
-      ZOOKEEPER_CLIENT_PORT: 42181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: localhost:22888:23888;localhost:32888:33888;localhost:42888:43888
-    network_mode: host
-    labels:
-    - io.confluent.docker.testing=true
   kafka-1:
     image: confluentinc/cp-kafka:latest
     network_mode: host
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: localhost:22181,localhost:32181,localhost:42181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:19092
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:49152'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://localhost:49152,PLAINTEXT://localhost:19092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:19092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:19092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
     - io.confluent.docker.testing=true
   kafka-2:
+    depends_on:
+      kafka-1:
+        condition: service_healthy
     image: confluentinc/cp-kafka:latest
     network_mode: host
     environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: localhost:22181,localhost:32181,localhost:42181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:29092
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '2@localhost:49154'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://localhost:49154,PLAINTEXT://localhost:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:29092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:29092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
     - io.confluent.docker.testing=true
   kafka-3:
+    depends_on:
+      kafka-2:
+        condition: service_healthy
     image: confluentinc/cp-kafka:latest
     network_mode: host
     environment:
-      KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: localhost:22181,localhost:32181,localhost:42181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:39092
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '3@localhost:49156'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://localhost:49156,PLAINTEXT://localhost:39092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:39092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:39092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
     - io.confluent.docker.testing=true
   schema-registry-1:
+    depends_on:
+      kafka-3:
+        condition: service_healthy
+    restart: on-failure:9
     image: confluentinc/cp-schema-registry:latest
     network_mode: host
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: localhost:22181,localhost:32181,localhost:42181
-      SCHEMA_REGISTRY_HOST_NAME: localhost
-      SCHEMA_REGISTRY_LISTENERS: http://localhost:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://localhost:19092,PLAINTEXT://localhost:29092,PLAINTEXT://localhost:39092'
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-1
+      SCHEMA_REGISTRY_LISTENERS: 'http://localhost:8081'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
     labels:
     - io.confluent.docker.testing=true
   schema-registry-2:
+    depends_on:
+      schema-registry-1:
+        condition: service_healthy
+    restart: on-failure:9
     image: confluentinc/cp-schema-registry:latest
     network_mode: host
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: localhost:22181,localhost:32181,localhost:42181
-      SCHEMA_REGISTRY_HOST_NAME: localhost
-      SCHEMA_REGISTRY_LISTENERS: http://localhost:8082
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://localhost:19092,PLAINTEXT://localhost:29092,PLAINTEXT://localhost:39092'
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-2
+      SCHEMA_REGISTRY_LISTENERS: 'http://localhost:8082'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
     labels:
     - io.confluent.docker.testing=true
   schema-registry-3:
+    depends_on:
+      schema-registry-2:
+        condition: service_healthy
+    restart: on-failure:9
     image: confluentinc/cp-schema-registry:latest
     network_mode: host
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: localhost:22181,localhost:32181,localhost:42181
-      SCHEMA_REGISTRY_HOST_NAME: localhost
-      SCHEMA_REGISTRY_LISTENERS: http://localhost:8083
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://localhost:19092,PLAINTEXT://localhost:29092,PLAINTEXT://localhost:39092'
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-3
+      SCHEMA_REGISTRY_LISTENERS: 'http://localhost:8083'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
     labels:
     - io.confluent.docker.testing=true
