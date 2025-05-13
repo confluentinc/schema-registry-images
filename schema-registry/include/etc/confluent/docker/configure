@@ -16,9 +16,9 @@
 
 . /etc/confluent/docker/bash-config
 
-dub ensure SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
-dub ensure SCHEMA_REGISTRY_HOST_NAME
-dub path /etc/"${COMPONENT}"/ writable
+ub ensure-atleast-one SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+ub ensure SCHEMA_REGISTRY_HOST_NAME
+ub path /etc/"${COMPONENT}"/ writable
 
 if [[ -n "${SCHEMA_REGISTRY_PORT-}" ]]
 then
@@ -34,6 +34,6 @@ then
   fi
 fi
 
-dub template "/etc/confluent/docker/${COMPONENT}.properties.template" "/etc/${COMPONENT}/${COMPONENT}.properties"
-dub template "/etc/confluent/docker/log4j2.yaml.template" "/etc/${COMPONENT}/log4j2.yaml"
-dub template "/etc/confluent/docker/admin.properties.template" "/etc/${COMPONENT}/admin.properties"
+ub render-template "/etc/confluent/docker/${COMPONENT}.properties.template" >> /etc/${COMPONENT}/${COMPONENT}.properties
+ub render-template "/etc/confluent/docker/log4j2.properties.template" >> /etc/${COMPONENT}/log4j2.properties
+ub render-template "/etc/confluent/docker/admin.properties.template" >> /etc/${COMPONENT}/admin.properties

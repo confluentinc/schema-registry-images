@@ -1,15 +1,34 @@
 Configuration:
-  name: Log4j2
+  status: warn
+  name: SchemaRegistryConfig
+  
+  Properties:
+    Property:
+      name: logPattern
+      value: "[%d] %-5p %c{1} - %m%n"
   
   Appenders:
     Console:
       name: stdout
       target: SYSTEM_OUT
       PatternLayout:
-        pattern: "[%d] %p %m (%c)%n"
+        pattern: ${logPattern}
   
   Loggers:
     Root:
-      level: {{ env['SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL'] | default('INFO') }}
+      level: {{ envOrDefault "SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL" "INFO" }}
       AppenderRef:
         - ref: stdout
+        - level: INFO
+
+{{- if env "SCHEMA_REGISTRY_LOG4J_LOGGERS" -}}
+{{- $loggers := parseLog4jLoggers (env "SCHEMA_REGISTRY_LOG4J_LOGGERS") -}}
+{{- range $logger, $loglevel := $loggers -}}
+    Logger:
+      name: {{$logger}}
+      level: {{$loglevel}}
+      additivity: false
+      AppenderRef:
+        - ref: stdout
+{{- end -}}
+{{- end -}}
