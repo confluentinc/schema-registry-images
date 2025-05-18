@@ -57,14 +57,16 @@ RUN echo "===> Installing ${COMPONENT}..." \
     && mkdir -p /etc/${COMPONENT}/secrets /usr/logs \
     && chown appuser:root -R /etc/${COMPONENT} /usr/logs \
     && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets \
-    && echo "===> Deduplicating Java packages..." \
-    && cd /usr/share/java \
-    && find . -type f -name "*.jar" -exec sh -c 'for f; do if [ -f "$f" ]; then md5sum "$f"; fi; done' _ {} + | sort | uniq -d -w32 | cut -d' ' -f3 | xargs -r rm -f
+    # && echo "===> Deduplicating Java packages..." \
+    # && cd /usr/share/java \
+    # && find . -type f -name "*.jar" -exec sh -c 'for f; do if [ -f "$f" ]; then md5sum "$f"; fi; done' _ {} + | sort | uniq -d -w32 | cut -d' ' -f3 | xargs -r rm -f
 
 VOLUME ["/etc/${COMPONENT}/secrets"]
 
 COPY --chown=appuser:appuser include/etc/confluent/docker /etc/confluent/docker
 
+RUN cd /usr/share/java \
+    && package_dedupe $(pwd)
 # Final stage
 FROM registry.access.redhat.com/ubi9-minimal:${UBI_MINIMAL_VERSION}
 
