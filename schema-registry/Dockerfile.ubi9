@@ -36,12 +36,12 @@ USER root
 RUN echo "===> Installing ${COMPONENT}..." \
     && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
     && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
-    && printf "[Confluent] \n\
-    name=Confluent repository \n\
-    baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
-    gpgcheck=1 \n\
-    gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
-    enabled=1 " > /etc/yum.repos.d/confluent.repo \
+    && echo "[Confluent]" > /etc/yum.repos.d/confluent.repo \
+    && echo "name=Confluent repository" >> /etc/yum.repos.d/confluent.repo \
+    && echo "baseurl=${CONFLUENT_PACKAGES_REPO}/" >> /etc/yum.repos.d/confluent.repo \
+    && echo "gpgcheck=1" >> /etc/yum.repos.d/confluent.repo \
+    && echo "gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key" >> /etc/yum.repos.d/confluent.repo \
+    && echo "enabled=1" >> /etc/yum.repos.d/confluent.repo \
     && microdnf install -y \
     confluent-${COMPONENT}-${CONFLUENT_VERSION} \
     # We are installing confluent-telemetry package explicitly because
@@ -56,10 +56,7 @@ RUN echo "===> Installing ${COMPONENT}..." \
     && echo "===> Setting up ${COMPONENT} dirs" \
     && mkdir -p /etc/${COMPONENT}/secrets /usr/logs \
     && chown appuser:root -R /etc/${COMPONENT} /usr/logs \
-    && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets \
-    # && echo "===> Deduplicating Java packages..." \
-    # && cd /usr/share/java \
-    # && find . -type f -name "*.jar" -exec sh -c 'for f; do if [ -f "$f" ]; then md5sum "$f"; fi; done' _ {} + | sort | uniq -d -w32 | cut -d' ' -f3 | xargs -r rm -f
+    && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets
 
 VOLUME ["/etc/${COMPONENT}/secrets"]
 
