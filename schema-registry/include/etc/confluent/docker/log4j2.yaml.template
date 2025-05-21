@@ -10,6 +10,6 @@ Configuration:
   
   Loggers:
     Root:
-      level: {{ env['SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL'] | default('INFO') }}
+      level: {{ getEnv "SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL" "INFO" }}
       AppenderRef:
         - ref: stdout
