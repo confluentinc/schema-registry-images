@@ -37,12 +37,12 @@ USER root
 RUN echo "===> Installing ${COMPONENT}..." \
     && echo "===> Adding confluent repository...${CONFLUENT_PACKAGES_REPO}" \
     && rpm --import ${CONFLUENT_PACKAGES_REPO}/archive.key \
-    && echo "[Confluent]" > /etc/yum.repos.d/confluent.repo \
-    && echo "name=Confluent repository" >> /etc/yum.repos.d/confluent.repo \
-    && echo "baseurl=${CONFLUENT_PACKAGES_REPO}/" >> /etc/yum.repos.d/confluent.repo \
-    && echo "gpgcheck=1" >> /etc/yum.repos.d/confluent.repo \
-    && echo "gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key" >> /etc/yum.repos.d/confluent.repo \
-    && echo "enabled=1" >> /etc/yum.repos.d/confluent.repo \
+    && printf "[Confluent] \n\
+name=Confluent repository \n\
+baseurl=${CONFLUENT_PACKAGES_REPO}/ \n\
+gpgcheck=1 \n\
+gpgkey=${CONFLUENT_PACKAGES_REPO}/archive.key \n\
+enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && microdnf install -y \
     confluent-${COMPONENT}-${CONFLUENT_VERSION} \
     # We are installing confluent-telemetry package explicitly because
@@ -87,10 +87,7 @@ ENV COMPONENT=schema-registry
 EXPOSE 8081
 
 # Copy installed files from intermediate stage
-COPY --from=intermediate /etc/${COMPONENT} /etc/${COMPONENT}
-COPY --from=intermediate /usr/logs /usr/logs
-COPY --from=intermediate /etc/confluent/docker /etc/confluent/docker
-COPY --from=intermediate /usr/share/java /usr/share/java
+COPY --from=intermediate / /
 
 USER appuser
 
