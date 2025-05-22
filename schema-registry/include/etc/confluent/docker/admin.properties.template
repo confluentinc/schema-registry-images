@@ -1,0 +1,4 @@
+{{- $securityProps := envToProps "SCHEMA_REGISTRY_KAFKASTORE_" "" nil nil nil -}}
+{{- range $name, $value := $securityProps -}}
+{{$name}}={{$value}}
+{{- end -}}

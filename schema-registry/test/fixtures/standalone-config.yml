@@ -1,0 +1,56 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:49152'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka:49152,PLAINTEXT://kafka:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - io.confluent.docker.testing=true
+  failing-config:
+    depends_on:
+      kafka:
+        condition: service_healthy
+    image: confluentinc/cp-schema-registry:latest
+    labels:
+    - io.confluent.docker.testing=true
+  failing-config-host-name:
+    depends_on:
+      kafka:
+        condition: service_healthy
+    image: confluentinc/cp-schema-registry:latest
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+    labels:
+    - io.confluent.docker.testing=true
+  default-config:
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure:9
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
+    image: confluentinc/cp-schema-registry:latest
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+      SCHEMA_REGISTRY_HOST_NAME: default-config
+    labels:
+    - io.confluent.docker.testing=true

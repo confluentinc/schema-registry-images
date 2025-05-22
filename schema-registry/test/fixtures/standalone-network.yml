@@ -1,0 +1,101 @@
+networks:
+  sr:
+    driver: bridge
+services:
+  kafka-bridge:
+    image: confluentinc/cp-kafka:latest
+    networks:
+    - sr
+    environment:
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-bridge:49152'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-bridge:49152,PLAINTEXT://kafka-bridge:19092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-bridge:19092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka-bridge:19092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    ports:
+    - 19092:19092
+    labels:
+    - io.confluent.docker.testing=true
+
+  kafka-host:
+    image: confluentinc/cp-kafka:latest
+    network_mode: host
+    environment:
+      KAFKA_CLEANUP_POLICY: 'compact'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:49153'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://localhost:49153,PLAINTEXT://localhost:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:29092'
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:29092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+    - io.confluent.docker.testing=true
+
+  schema-registry-host:
+    image: confluentinc/cp-schema-registry:latest
+    network_mode: host
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://localhost:29092'
+      SCHEMA_REGISTRY_HOST_NAME: localhost
+    labels:
+    - io.confluent.docker.testing=true
+
+  schema-registry-bridge:
+    image: confluentinc/cp-schema-registry:latest
+    networks:
+    - sr
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-bridge:19092'
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-bridge
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:18081"
+    ports:
+    - 18081:18081
+    labels:
+    - io.confluent.docker.testing=true
+
+  schema-registry-bridge-jmx:
+    image: confluentinc/cp-schema-registry:latest
+    networks:
+    - sr
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-bridge:19092'
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-bridge-jmx
+      SCHEMA_REGISTRY_JMX_PORT: 39999
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+    labels:
+    - io.confluent.docker.testing=true
+
+  schema-registry-host-jmx:
+    image: confluentinc/cp-schema-registry:latest
+    network_mode: host
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://localhost:29092'
+      SCHEMA_REGISTRY_HOST_NAME: localhost
+      SCHEMA_REGISTRY_JMX_PORT: 9999
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:28081"
+    labels:
+    - io.confluent.docker.testing=true
+
+
