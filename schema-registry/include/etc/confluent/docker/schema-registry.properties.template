@@ -1,4 +1,4 @@
-{{- $srProps := envToProps "SCHEMA_REGISTRY_" "" -}}
+{{- $srProps := envToProps "SCHEMA_REGISTRY_" "" nil nil nil -}}
 {{- range $name, $value := $srProps -}}
 {{$name}}={{$value}}
 {{- end -}}

@@ -19,13 +19,8 @@ ARG UBI_MINIMAL_VERSION
 
 FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java:${DOCKER_UPSTREAM_TAG} as intermediate
 
-ARG PROJECT_VERSION
-ARG ARTIFACT_ID
-ARG GIT_COMMIT
 ARG CONFLUENT_VERSION
 ARG CONFLUENT_PACKAGES_REPO
-ARG CONFLUENT_PLATFORM_LABEL
-ARG BUILD_NUMBER=-1
 
 ENV COMPONENT=schema-registry
 
@@ -67,6 +62,11 @@ RUN cd /usr/share/java \
     && package_dedupe $(pwd)
 # Final stage
 FROM registry.access.redhat.com/ubi9-minimal:${UBI_MINIMAL_VERSION}
+
+ARG PROJECT_VERSION
+ARG ARTIFACT_ID
+ARG GIT_COMMIT
+ARG BUILD_NUMBER=-1
 
 # Copy labels from intermediate stage
 LABEL maintainer="partner-support@confluent.io"
