@@ -13,3 +13,13 @@ Configuration:
       level: {{ env['SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL'] | default('INFO') }}
       AppenderRef:
         - ref: stdout
+    Logger:
+{% if env['SCHEMA_REGISTRY_LOG4J_LOGGERS'] %}
+{% set loggers = parse_log4j_loggers(env['SCHEMA_REGISTRY_LOG4J_LOGGERS']) %}
+{% for logger,loglevel in loggers.items() %}
+      - name: "{{ logger }}"
+        level: "{{ loglevel }}"
+        AppenderRef:
+          - ref: STDOUT
+{% endfor %}
+{% endif %}
