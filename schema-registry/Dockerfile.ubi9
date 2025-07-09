@@ -15,12 +15,29 @@
 
 ARG DOCKER_UPSTREAM_REGISTRY
 ARG DOCKER_UPSTREAM_TAG=ubi9-latest
-ARG UBI_MINIMAL_VERSION
 
-FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java:${DOCKER_UPSTREAM_TAG} as intermediate
+FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java:${DOCKER_UPSTREAM_TAG}
+
+ARG PROJECT_VERSION
+ARG ARTIFACT_ID
+ARG GIT_COMMIT
+
+LABEL maintainer="partner-support@confluent.io"
+LABEL vendor="Confluent"
+LABEL version=$GIT_COMMIT
+LABEL release=$PROJECT_VERSION
+LABEL name=$ARTIFACT_ID
+LABEL summary="Confluent Schema Registry provides a RESTful interface for developers to define standard schemas for their events, share them across the organization and safely evolve them in a way that is backward compatible and future proof."
+LABEL description="Confluent Schema Registry provides a RESTful interface for developers to define standard schemas for their events, share them across the organization and safely evolve them in a way that is backward compatible and future proof."
+LABEL io.confluent.docker=true
+LABEL io.confluent.docker.git.id=$GIT_COMMIT
+ARG BUILD_NUMBER=-1
+LABEL io.confluent.docker.build.number=$BUILD_NUMBER
+LABEL io.confluent.docker.git.repo="confluentinc/schema-registry-images"
 
 ARG CONFLUENT_VERSION
 ARG CONFLUENT_PACKAGES_REPO
+ARG CONFLUENT_PLATFORM_LABEL
 
 ENV COMPONENT=schema-registry
 
@@ -52,42 +69,13 @@ enabled=1 " > /etc/yum.repos.d/confluent.repo \
     && echo "===> Setting up ${COMPONENT} dirs" \
     && mkdir -p /etc/${COMPONENT}/secrets /usr/logs \
     && chown appuser:root -R /etc/${COMPONENT} /usr/logs \
-    && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets
+    && chmod -R ug+w /etc/${COMPONENT} /etc/${COMPONENT}/secrets \
+    && cd /usr/share/java \
+    && package_dedupe $(pwd)
 
 VOLUME ["/etc/${COMPONENT}/secrets"]
 
 COPY --chown=appuser:appuser include/etc/confluent/docker /etc/confluent/docker
-
-RUN cd /usr/share/java \
-    && package_dedupe $(pwd)
-# Final stage
-FROM registry.access.redhat.com/ubi9-minimal:${UBI_MINIMAL_VERSION}
-
-ARG PROJECT_VERSION
-ARG ARTIFACT_ID
-ARG GIT_COMMIT
-ARG BUILD_NUMBER=-1
-
-# Copy labels from intermediate stage
-LABEL maintainer="partner-support@confluent.io"
-LABEL vendor="Confluent"
-LABEL version=$GIT_COMMIT
-LABEL release=$PROJECT_VERSION
-LABEL name=$ARTIFACT_ID
-LABEL summary="Confluent Schema Registry provides a RESTful interface for developers to define standard schemas for their events, share them across the organization and safely evolve them in a way that is backward compatible and future proof."
-LABEL description="Confluent Schema Registry provides a RESTful interface for developers to define standard schemas for their events, share them across the organization and safely evolve them in a way that is backward compatible and future proof."
-LABEL io.confluent.docker=true
-LABEL io.confluent.docker.git.id=$GIT_COMMIT
-LABEL io.confluent.docker.build.number=$BUILD_NUMBER
-LABEL io.confluent.docker.git.repo="confluentinc/schema-registry-images"
-
-ENV COMPONENT=schema-registry
-
-# Default listener
-EXPOSE 8081
-
-# Copy installed files from intermediate stage
-COPY --from=intermediate / /
 
 USER appuser
 
