@@ -1,25 +1,28 @@
 Configuration:
   name: Log4j2
-  
   Appenders:
     Console:
-      name: stdout
+      name: STDOUT
       target: SYSTEM_OUT
       PatternLayout:
-        pattern: "[%d] %p %m (%c)%n"
-  
+        Pattern: "{{ getEnv "SCHEMA_REGISTRY_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN" "[%d] %p %m (%c)%n" }}"
+
   Loggers:
     Root:
-      level: {{ getEnv "SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL" "INFO" }}
+      level: "{{ getEnv "SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL" "INFO" }}"
       AppenderRef:
-        - ref: stdout
+        - ref: STDOUT
     Logger:
-{% if env['SCHEMA_REGISTRY_LOG4J_LOGGERS'] %}
-{% set loggers = parse_log4j_loggers(env['SCHEMA_REGISTRY_LOG4J_LOGGERS']) %}
-{% for logger,loglevel in loggers.items() %}
-      - name: "{{ logger }}"
-        level: "{{ loglevel }}"
+      - name: "org.reflections"
+        level: "ERROR"
         AppenderRef:
           - ref: STDOUT
-{% endfor %}
-{% endif %}
+{{- if getEnv "SCHEMA_REGISTRY_LOG4J_LOGGERS" "" }}
+{{- $loggers := parseLog4jLoggers (getEnv "SCHEMA_REGISTRY_LOG4J_LOGGERS" "") }}
+{{- range $k, $v := $loggers }}
+      - name: "{{ $k }}"
+        level: "{{ $v }}"
+        AppenderRef:
+          - ref: STDOUT
+{{- end }}
+{{- end }}
