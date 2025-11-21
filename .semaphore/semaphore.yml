@@ -70,7 +70,7 @@ global_job_config:
       - export DOCKER_PROD_REGISTRY="519856050701.dkr.ecr.us-west-2.amazonaws.com/docker/prod/"
       - export DOCKER_UPSTREAM_REGISTRY=$DOCKER_PROD_REGISTRY
       - export LATEST_TAG=$BRANCH_TAG-latest
-      - export DOCKER_UPSTREAM_TAG="$LATEST_TAG"
+      - export DOCKER_UPSTREAM_TAG="dev-7.4.x-8fa813ee"
       - export DOCKER_REPOS="confluentinc/cp-schema-registry"
       - export COMMUNITY_DOCKER_REPOS=""
       - |
