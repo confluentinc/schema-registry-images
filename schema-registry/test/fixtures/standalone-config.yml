@@ -54,3 +54,22 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: default-config
     labels:
     - io.confluent.docker.testing=true
+  custom-logging-config:
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure:9
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/config" ]
+      interval: 10s
+      timeout: 10s
+      retries: 100
+      start_period: 10s
+    image: confluentinc/cp-schema-registry:latest
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+      SCHEMA_REGISTRY_HOST_NAME: default-config
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: ERROR
+      SCHEMA_REGISTRY_LOG4J_LOGGERS: io.confluent.rest-utils.requests=DEBUG,org.eclipse.jetty.server=DEBUG
+    labels:
+    - io.confluent.docker.testing=true
