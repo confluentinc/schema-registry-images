@@ -52,10 +52,6 @@ RUN echo "===> Installing schema-registry packages to /microdir with dnf" \
        confluent-telemetry-${CONFLUENT_VERSION} \
        confluent-security-${CONFLUENT_VERSION} \
        confluent-schema-registry-plugins-${CONFLUENT_VERSION} \
-    && echo "===> Removing extra directories installed in confluent-security ..." \
-    && rm -rf /microdir/usr/share/java/confluent-security/connect \
-              /microdir/usr/share/java/confluent-security/kafka-rest \
-              /microdir/usr/share/java/confluent-security/ksql \
     && echo "===> Deduping jars in /microdir ..." \
     && package_dedupe /microdir/usr/share/java \
     && echo "===> Cleaning up ..." \
