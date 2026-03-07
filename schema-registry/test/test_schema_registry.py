@@ -1,9 +1,7 @@
 import os
 import unittest
 import utils
-import time
 import string
-import json
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.join(CURRENT_DIR, "fixtures", "debian", "schema-registry")
@@ -83,6 +81,40 @@ class ConfigTest(unittest.TestCase):
         - ref: stdout
 
             """
+        self.assertEquals(log4j_props.translate(None, string.whitespace), expected_log4j_props.translate(None, string.whitespace))
+
+    def test_custom_logging_config(self):
+        self.is_schema_registry_healthy_for_service("custom-logging-config")
+
+        log4j_props = self.cluster.run_command_on_service("custom-logging-config", "cat /etc/schema-registry/log4j2.yaml")
+        expected_log4j_props = """Configuration:
+  name: Log4j2
+  Appenders:
+    Console:
+      name: STDOUT
+      target: SYSTEM_OUT
+      PatternLayout:
+        Pattern: "[%d] %p %m (%c)%n"
+
+  Loggers:
+    Root:
+      level: "ERROR"
+      AppenderRef:
+        - ref: STDOUT
+    Logger:
+      - name: "io.confluent.rest-utils.requests"
+        level: "DEBUG"
+        AppenderRef:
+          - ref: STDOUT
+      - name: "org.eclipse.jetty.server"
+        level: "DEBUG"
+        AppenderRef:
+          - ref: STDOUT
+      - name: "org.reflections"
+        level: "ERROR"
+        AppenderRef:
+          - ref: STDOUT
+"""
         self.assertEquals(log4j_props.translate(None, string.whitespace), expected_log4j_props.translate(None, string.whitespace))
 
 
