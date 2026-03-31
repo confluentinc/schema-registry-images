@@ -1,7 +1,3 @@
-# See go/codeowners - automatically generated for confluentinc/schema-registry-images:
-*	@Clarence97
 *	@confluentinc/data-governance
-*	@ConfluentJenkins
-*	@SamehTawfik
-*	@amitkgupta
-*	@jkao97
+.semaphore/	@confluentinc/data-governance @confluentinc/cp-build-and-release-team
+service.yml	@confluentinc/data-governance @confluentinc/cp-build-and-release-team
