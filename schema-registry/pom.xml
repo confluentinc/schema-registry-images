@@ -81,6 +81,31 @@
                     </images>
                 </configuration>
             </plugin>
+
+            <!-- Smoke-tests JMX auth/access-control against the image docker-maven-plugin
+                 just built. Skipped when the image build itself is skipped. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>jmx-security-smoke-test</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${docker.skip-build}</skip>
+                            <executable>bash</executable>
+                            <arguments>
+                                <argument>${project.basedir}/test/jmx-security-smoke-test.sh</argument>
+                                <argument>${docker.registry}confluentinc/cp-schema-registry:${docker.tag}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
