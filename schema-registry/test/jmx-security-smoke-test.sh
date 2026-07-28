@@ -87,7 +87,7 @@ log "Kafka broker is ready"
 
 wait_for_ready() {
   local container="$1"
-  if docker exec "$container" cub sr-ready localhost 8081 120 >/dev/null 2>&1; then
+  if docker exec "$container" ub sr-ready localhost 8081 120 >/dev/null 2>&1; then
     return 0
   fi
   log "Container $container did not become ready in time; logs:"
