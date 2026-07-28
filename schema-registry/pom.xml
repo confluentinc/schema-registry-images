@@ -69,6 +69,15 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
+                <!-- Runs before "package" so jmx-security-smoke-test below can use the built image. -->
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <images>
                         <image>
@@ -76,9 +85,7 @@
                                 <args>
                                     <UBI9_VERSION>${ubi9.image.version}</UBI9_VERSION>
                                 </args>
-                                <!-- Every CI leg builds a single platform (native amd64/arm64, or
-                                     emulated s390x); load it into the local daemon so the
-                                     jmx-security-smoke-test below can docker run it. -->
+                                <!-- Single-platform build per CI leg; load into the local daemon. -->
                                 <buildx>
                                     <load>true</load>
                                 </buildx>
@@ -88,8 +95,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Smoke-tests JMX auth/access-control against the image docker-maven-plugin
-                 just built. Skipped when the image build itself is skipped. -->
+            <!-- Smoke-tests JMX auth/access-control against the image docker-maven-plugin just built. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
