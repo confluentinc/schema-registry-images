@@ -76,6 +76,12 @@
                                 <args>
                                     <UBI9_VERSION>${ubi9.image.version}</UBI9_VERSION>
                                 </args>
+                                <!-- Every CI leg builds a single platform (native amd64/arm64, or
+                                     emulated s390x); load it into the local daemon so the
+                                     jmx-security-smoke-test below can docker run it. -->
+                                <buildx>
+                                    <load>true</load>
+                                </buildx>
                             </build>
                         </image>
                     </images>

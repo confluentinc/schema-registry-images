@@ -47,7 +47,7 @@ cleanup() {
 trap cleanup EXIT
 
 log "Building minimal jmxterm client image"
-curl -sL -o "$WORKDIR/jmxterm.jar" \
+curl -fsL -o "$WORKDIR/jmxterm.jar" \
   https://github.com/jiaqi/jmxterm/releases/download/v1.0.4/jmxterm-1.0.4-uber.jar
 cat > "$WORKDIR/Dockerfile" <<'EOF'
 FROM eclipse-temurin:17-jre
