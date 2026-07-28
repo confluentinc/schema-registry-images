@@ -21,9 +21,7 @@ if [ -z "$SCHEMA_REGISTRY_JMX_OPTS" ]; then
   if [ "${SCHEMA_REGISTRY_JMX_REMOTE_ENABLE:-false}" = "true" ] && [ -n "$SCHEMA_REGISTRY_JMX_PORT" ]; then
     # Remote JMX explicitly enabled — require authentication and read-only
     # authorization, otherwise any client on the network could invoke MBean
-    # operations. Credentials are never hardcoded: an operator can point to
-    # their own password/access files, otherwise one is generated on first
-    # start with a random password.
+    # operations
     export JMX_PORT=$SCHEMA_REGISTRY_JMX_PORT
 
     JMX_CONFIG_DIR="${SCHEMA_REGISTRY_JMX_CONFIG_DIR:-/etc/schema-registry/secrets}"
@@ -44,14 +42,9 @@ if [ -z "$SCHEMA_REGISTRY_JMX_OPTS" ]; then
 
     SCHEMA_REGISTRY_JMX_OPTS="$SCHEMA_REGISTRY_JMX_OPTS -Djava.rmi.server.hostname=$SCHEMA_REGISTRY_JMX_HOSTNAME -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.rmi.port=$JMX_PORT -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=true -Dcom.sun.management.jmxremote.password.file=$JMX_PASSWORD_FILE -Dcom.sun.management.jmxremote.access.file=$JMX_ACCESS_FILE"
   else
-    # Default: local-only JMX (remote access disabled). In-process monitoring
-    # (OTel agent, JMX Prometheus exporter, etc.) continues to work since they
-    # access MBeans via the in-process JVM, not the remote port. The remote
-    # RMI connector port is not opened even if SCHEMA_REGISTRY_JMX_PORT is set,
-    # because -Dcom.sun.management.jmxremote.local.only does not prevent
-    # remote access through an explicitly configured RMI port. To enable
-    # remote JMX, set SCHEMA_REGISTRY_JMX_REMOTE_ENABLE=true and
-    # SCHEMA_REGISTRY_JMX_PORT.
+    # Default: local-only JMX. In-process monitoring (OTel agent,
+    # JMX Prometheus exporter, etc.) continues to work since they
+    # access MBeans via the in-process JVM, not the remote port.
     SCHEMA_REGISTRY_JMX_OPTS="$SCHEMA_REGISTRY_JMX_OPTS -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=true"
   fi
 fi
