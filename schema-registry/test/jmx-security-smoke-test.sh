@@ -85,16 +85,12 @@ until docker exec "$KAFKA_CONTAINER" kafka-topics --bootstrap-server "${KAFKA_CO
 done
 log "Kafka broker is ready"
 
-wait_for_launch() {
-  local container="$1" tries=30
-  while [ $tries -gt 0 ]; do
-    if docker logs "$container" 2>&1 | grep -q "Launching"; then
-      return 0
-    fi
-    sleep 1
-    tries=$((tries - 1))
-  done
-  log "Container $container did not report launch in time; logs:"
+wait_for_ready() {
+  local container="$1"
+  if docker exec "$container" cub sr-ready localhost 8081 120 >/dev/null 2>&1; then
+    return 0
+  fi
+  log "Container $container did not become ready in time; logs:"
   docker logs "$container" 2>&1 | tail -30
   return 1
 }
@@ -110,7 +106,7 @@ docker run -d --name "$DEFAULT_CONTAINER" --network "$NET" \
   "${common_env[@]}" \
   -e SCHEMA_REGISTRY_JMX_PORT=9999 \
   "$IMAGE" >/dev/null
-wait_for_launch "$DEFAULT_CONTAINER"
+wait_for_ready "$DEFAULT_CONTAINER"
 
 output=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
   bash -c "echo beans | timeout 10 java -jar /jmxterm.jar -l ${DEFAULT_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
@@ -127,7 +123,7 @@ docker run -d --name "$REMOTE_CONTAINER" --network "$NET" \
   -e SCHEMA_REGISTRY_JMX_PORT=9999 \
   -e SCHEMA_REGISTRY_JMX_REMOTE_ENABLE=true \
   "$IMAGE" >/dev/null
-wait_for_launch "$REMOTE_CONTAINER"
+wait_for_ready "$REMOTE_CONTAINER"
 
 PASSWORD=$(docker exec "$REMOTE_CONTAINER" grep '^monitorRole' /etc/schema-registry/secrets/jmxremote.password | awk '{print $2}')
 if [ -z "$PASSWORD" ]; then
