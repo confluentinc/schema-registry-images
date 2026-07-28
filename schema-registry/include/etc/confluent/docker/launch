@@ -30,8 +30,8 @@ if [ -z "$SCHEMA_REGISTRY_JMX_OPTS" ]; then
     JMX_PASSWORD_FILE="${SCHEMA_REGISTRY_JMX_PASSWORD_FILE:-$JMX_CONFIG_DIR/jmxremote.password}"
     JMX_ACCESS_FILE="${SCHEMA_REGISTRY_JMX_ACCESS_FILE:-$JMX_CONFIG_DIR/jmxremote.access}"
 
-    if [ ! -f "$JMX_PASSWORD_FILE" ] && [ -x /etc/confluent/docker/setup-jmx-security.sh ]; then
-      /etc/confluent/docker/setup-jmx-security.sh "$JMX_CONFIG_DIR"
+    if { [ ! -f "$JMX_PASSWORD_FILE" ] || [ ! -f "$JMX_ACCESS_FILE" ]; } && [ -x /etc/confluent/docker/setup-jmx-security.sh ]; then
+      /etc/confluent/docker/setup-jmx-security.sh "$JMX_PASSWORD_FILE" "$JMX_ACCESS_FILE"
     fi
 
     # The JMX client needs to be able to connect to java.rmi.server.hostname.
@@ -55,6 +55,10 @@ if [ -z "$SCHEMA_REGISTRY_JMX_OPTS" ]; then
     SCHEMA_REGISTRY_JMX_OPTS="$SCHEMA_REGISTRY_JMX_OPTS -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=true"
   fi
 fi
+
+# Must export: schema-registry-run-class (a separate, packaged script) has
+# its own insecure JMX fallback that only backs off if this is already set.
+export SCHEMA_REGISTRY_JMX_OPTS
 
 echo "===> Launching ${COMPONENT} ... "
 exec "${COMPONENT}"-start /etc/"${COMPONENT}"/"${COMPONENT}".properties

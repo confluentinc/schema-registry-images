@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2026 Confluent Inc.
 #
@@ -14,15 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Generates a JMX password file and a read-only access file for the remote
-# JMX RMI port. Only called when no password file exists yet, so operator-
-# supplied credentials are never overwritten.
+# Generates a JMX password/access file at the given paths, each only if
+# missing, so operator-supplied credentials are never overwritten.
 
 set -euo pipefail
 
-CONFIG_DIR="${1:?usage: $0 <config-dir>}"
-PASSWORD_FILE="$CONFIG_DIR/jmxremote.password"
-ACCESS_FILE="$CONFIG_DIR/jmxremote.access"
+PASSWORD_FILE="${1:?usage: $0 <password-file> <access-file>}"
+ACCESS_FILE="${2:?usage: $0 <password-file> <access-file>}"
 
 generate_password() {
   if command -v openssl >/dev/null 2>&1; then
@@ -32,19 +30,25 @@ generate_password() {
   fi
 }
 
-mkdir -p "$CONFIG_DIR"
+mkdir -p "$(dirname "$PASSWORD_FILE")" "$(dirname "$ACCESS_FILE")"
+umask 077
 
-MONITOR_PASSWORD="${SCHEMA_REGISTRY_JMX_MONITOR_PASSWORD:-$(generate_password)}"
+if [ ! -f "$PASSWORD_FILE" ]; then
+  MONITOR_PASSWORD="${SCHEMA_REGISTRY_JMX_MONITOR_PASSWORD:-$(generate_password)}"
 
-cat > "$PASSWORD_FILE" <<EOF
+  cat > "$PASSWORD_FILE" <<EOF
 monitorRole $MONITOR_PASSWORD
 EOF
 
-cat > "$ACCESS_FILE" <<EOF
+  chmod 600 "$PASSWORD_FILE"
+  echo "===> Generated JMX password file at $PASSWORD_FILE (role: monitorRole)"
+fi
+
+if [ ! -f "$ACCESS_FILE" ]; then
+  cat > "$ACCESS_FILE" <<EOF
 monitorRole readonly
 EOF
 
-chmod 600 "$PASSWORD_FILE"
-chmod 644 "$ACCESS_FILE"
-
-echo "===> Generated JMX credentials at $PASSWORD_FILE (role: monitorRole, access: readonly)"
+  chmod 644 "$ACCESS_FILE"
+  echo "===> Generated JMX access file at $ACCESS_FILE (access: readonly)"
+fi
