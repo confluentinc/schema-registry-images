@@ -85,10 +85,6 @@
                                 <args>
                                     <UBI9_VERSION>${ubi9.image.version}</UBI9_VERSION>
                                 </args>
-                                <!-- Single-platform build per CI leg; load into the local daemon. -->
-                                <buildx>
-                                    <load>true</load>
-                                </buildx>
                             </build>
                         </image>
                     </images>
