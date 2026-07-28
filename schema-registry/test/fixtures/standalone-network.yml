@@ -98,4 +98,31 @@ services:
     labels:
     - io.confluent.docker.testing=true
 
+  schema-registry-bridge-jmx-remote:
+    image: confluentinc/cp-schema-registry:latest
+    networks:
+    - sr
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-bridge:19092'
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry-bridge-jmx-remote
+      SCHEMA_REGISTRY_JMX_PORT: 39998
+      SCHEMA_REGISTRY_JMX_REMOTE_ENABLE: 'true'
+      SCHEMA_REGISTRY_JMX_MONITOR_PASSWORD: 'testJmxPassword123'
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+    labels:
+    - io.confluent.docker.testing=true
+
+  schema-registry-host-jmx-remote:
+    image: confluentinc/cp-schema-registry:latest
+    network_mode: host
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://localhost:29092'
+      SCHEMA_REGISTRY_HOST_NAME: localhost
+      SCHEMA_REGISTRY_JMX_PORT: 9998
+      SCHEMA_REGISTRY_JMX_REMOTE_ENABLE: 'true'
+      SCHEMA_REGISTRY_JMX_MONITOR_PASSWORD: 'testJmxPassword123'
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:28082"
+    labels:
+    - io.confluent.docker.testing=true
+
 
