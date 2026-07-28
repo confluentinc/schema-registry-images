@@ -19,6 +19,11 @@ JMX_CHECK = """bash -c "\
     echo 'get -b kafka.schema.registry:type=jetty-metrics connections-active' |
         java -jar jmxterm-1.0-alpha-4-uber.jar -l {jmx_hostname}:{jmx_port} -n -v silent "
 """
+JMX_CHECK_AUTH = """bash -c "\
+    echo 'get -b kafka.schema.registry:type=jetty-metrics connections-active' |
+        java -jar jmxterm-1.0-alpha-4-uber.jar -l {jmx_hostname}:{jmx_port} -u {jmx_user} -p {jmx_password} -n -v silent "
+"""
+JMX_REMOTE_ENABLED_PASSWORD = 'testJmxPassword123'
 
 
 class ConfigTest(unittest.TestCase):
@@ -134,26 +139,54 @@ class StandaloneNetworkingTest(unittest.TestCase):
 
         self.assertTrue("PASS" in logs)
 
-    def test_jmx_bridged_network(self):
+    def test_jmx_bridged_network_disabled_by_default(self):
 
         self.is_schema_registry_healthy_for_service("schema-registry-bridge-jmx")
 
-        # Test from outside the container
+        # From outside the container: JMX_PORT alone must not open remote access.
         logs = utils.run_docker_command(
             image="confluentinc/cp-jmxterm",
             command=JMX_CHECK.format(jmx_hostname="schema-registry-bridge-jmx", jmx_port=39999),
             host_config={'NetworkMode': 'standalone-network-test_zk'})
 
-        self.assertTrue("connections-active =" in logs)
+        self.assertFalse("connections-active =" in logs)
 
-    def test_jmx_host_network(self):
+    def test_jmx_host_network_disabled_by_default(self):
 
         self.is_schema_registry_healthy_for_service("schema-registry-host-jmx", 28081)
 
-        # Test from outside the container
+        # From outside the container: JMX_PORT alone must not open remote access.
         logs = utils.run_docker_command(
             image="confluentinc/cp-jmxterm",
             command=JMX_CHECK.format(jmx_hostname="localhost", jmx_port=9999),
+            host_config={'NetworkMode': 'host'})
+
+        self.assertFalse("connections-active =" in logs)
+
+    def test_jmx_bridged_network_remote_enabled(self):
+
+        self.is_schema_registry_healthy_for_service("schema-registry-bridge-jmx-remote")
+
+        # From outside the container: requires the generated/configured credentials.
+        logs = utils.run_docker_command(
+            image="confluentinc/cp-jmxterm",
+            command=JMX_CHECK_AUTH.format(
+                jmx_hostname="schema-registry-bridge-jmx-remote", jmx_port=39998,
+                jmx_user="monitorRole", jmx_password=JMX_REMOTE_ENABLED_PASSWORD),
+            host_config={'NetworkMode': 'standalone-network-test_zk'})
+
+        self.assertTrue("connections-active =" in logs)
+
+    def test_jmx_host_network_remote_enabled(self):
+
+        self.is_schema_registry_healthy_for_service("schema-registry-host-jmx-remote", 28082)
+
+        # From outside the container: requires the generated/configured credentials.
+        logs = utils.run_docker_command(
+            image="confluentinc/cp-jmxterm",
+            command=JMX_CHECK_AUTH.format(
+                jmx_hostname="localhost", jmx_port=9998,
+                jmx_user="monitorRole", jmx_password=JMX_REMOTE_ENABLED_PASSWORD),
             host_config={'NetworkMode': 'host'})
 
         self.assertTrue("connections-active =" in logs)
