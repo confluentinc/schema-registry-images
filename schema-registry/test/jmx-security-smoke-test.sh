@@ -116,6 +116,11 @@ else
   fail "expected remote JMX to be unreachable by default; got: $output"
 fi
 
+# Both containers share a hostname/Kafka cluster; leader election rejects two
+# live members advertising the same identity, so stop the first before the
+# next one starts.
+docker rm -f "$DEFAULT_CONTAINER" >/dev/null 2>&1
+
 # --- Scenario 2: remote explicitly enabled ---
 log "Starting container with SCHEMA_REGISTRY_JMX_REMOTE_ENABLE=true"
 docker run -d --name "$REMOTE_CONTAINER" --network "$NET" \
