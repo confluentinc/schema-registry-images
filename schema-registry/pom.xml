@@ -69,7 +69,6 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <!-- Runs before "package" so jmx-security-smoke-test below can use the built image. -->
                 <executions>
                     <execution>
                         <phase>prepare-package</phase>
