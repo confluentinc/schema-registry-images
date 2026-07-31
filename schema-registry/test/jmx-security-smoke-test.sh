@@ -28,6 +28,7 @@ RUN_ID="jmx-smoke-$$"
 NET="${RUN_ID}-net"
 DEFAULT_CONTAINER="${RUN_ID}-default"
 REMOTE_CONTAINER="${RUN_ID}-remote"
+CONFLICT_CONTAINER="${RUN_ID}-conflict"
 CLIENT_IMAGE="${RUN_ID}-jmxterm"
 WORKDIR="$(mktemp -d)"
 
@@ -39,7 +40,7 @@ fail() { echo "FAIL: $*"; FAILURES=$((FAILURES + 1)); }
 
 cleanup() {
   log "Cleaning up"
-  docker rm -f "$DEFAULT_CONTAINER" "$REMOTE_CONTAINER" "${KAFKA_CONTAINER:-}" >/dev/null 2>&1 || true
+  docker rm -f "$DEFAULT_CONTAINER" "$REMOTE_CONTAINER" "$CONFLICT_CONTAINER" "${KAFKA_CONTAINER:-}" >/dev/null 2>&1 || true
   docker network rm "$NET" >/dev/null 2>&1 || true
   docker rmi "$CLIENT_IMAGE" >/dev/null 2>&1 || true
   rm -rf "$WORKDIR"
@@ -167,6 +168,28 @@ if echo "$write_result" | grep -q "Access denied"; then
   pass "remote JMX enforces readonly access (attribute writes denied)"
 else
   fail "expected a write operation to be denied; got: $write_result"
+fi
+
+# Same hostname/Kafka cluster as the next container; leader election
+# rejects two live members with the same identity.
+docker rm -f "$REMOTE_CONTAINER" >/dev/null 2>&1
+
+# --- Scenario 3: SCHEMA_REGISTRY_JMX_OPTS already set to something insecure ---
+log "Starting container with SCHEMA_REGISTRY_JMX_OPTS already set to a conflicting flag"
+docker run -d --name "$CONFLICT_CONTAINER" --network "$NET" \
+  "${common_env[@]}" \
+  -e SCHEMA_REGISTRY_JMX_PORT=9999 \
+  -e SCHEMA_REGISTRY_JMX_REMOTE_ENABLE=true \
+  -e SCHEMA_REGISTRY_JMX_OPTS="-Dcom.sun.management.jmxremote.authenticate=false" \
+  "$IMAGE" >/dev/null
+wait_for_ready "$CONFLICT_CONTAINER"
+
+conflict_no_creds=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
+  bash -c "echo beans | timeout 10 java -jar /jmxterm.jar -l ${CONFLICT_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
+if echo "$conflict_no_creds" | grep -q "Credentials required"; then
+  pass "SCHEMA_REGISTRY_JMX_REMOTE_ENABLE still requires auth despite a conflicting SCHEMA_REGISTRY_JMX_OPTS"
+else
+  fail "expected remote JMX to still require credentials despite conflicting SCHEMA_REGISTRY_JMX_OPTS; got: $conflict_no_creds"
 fi
 
 echo
