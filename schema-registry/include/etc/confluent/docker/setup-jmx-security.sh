@@ -14,13 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Generates a JMX password/access file at the given paths, each only if
-# missing, so operator-supplied credentials are never overwritten.
+# Generates JMX password/access files at the given paths, each only if
+# missing, so operator-supplied files are never overwritten. If keystore
+# arguments are given too, also generates a self-signed TLS keystore.
 
 set -euo pipefail
 
-PASSWORD_FILE="${1:?usage: $0 <password-file> <access-file>}"
-ACCESS_FILE="${2:?usage: $0 <password-file> <access-file>}"
+USAGE="usage: $0 <password-file> <access-file> [keystore-file] [keystore-password-file] [cert-file]"
+PASSWORD_FILE="${1:?$USAGE}"
+ACCESS_FILE="${2:?$USAGE}"
+KEYSTORE_FILE="${3:-}"
+KEYSTORE_PASSWORD_FILE="${4:-}"
+CERT_FILE="${5:-}"
 
 generate_password() {
   if command -v openssl >/dev/null 2>&1; then
@@ -31,6 +36,7 @@ generate_password() {
 }
 
 mkdir -p "$(dirname "$PASSWORD_FILE")" "$(dirname "$ACCESS_FILE")"
+[ -n "$KEYSTORE_FILE" ] && mkdir -p "$(dirname "$KEYSTORE_FILE")"
 umask 077
 
 if [ ! -f "$PASSWORD_FILE" ]; then
@@ -51,4 +57,22 @@ EOF
 
   chmod 644 "$ACCESS_FILE"
   echo "===> Generated JMX access file at $ACCESS_FILE (access: readonly)"
+fi
+
+if [ -n "$KEYSTORE_FILE" ] && [ ! -f "$KEYSTORE_FILE" ]; then
+  KEYSTORE_PASSWORD="${SCHEMA_REGISTRY_JMX_KEYSTORE_PASSWORD:-$(generate_password)}"
+  JMX_TLS_HOSTNAME="${SCHEMA_REGISTRY_JMX_HOSTNAME:-$(hostname -i | cut -d" " -f1)}"
+
+  keytool -genkeypair -alias jmx -keyalg RSA -keysize 2048 -validity 3650 \
+    -keystore "$KEYSTORE_FILE" -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" \
+    -dname "CN=$JMX_TLS_HOSTNAME" -noprompt >/dev/null
+
+  echo "$KEYSTORE_PASSWORD" > "$KEYSTORE_PASSWORD_FILE"
+  chmod 600 "$KEYSTORE_FILE" "$KEYSTORE_PASSWORD_FILE"
+
+  keytool -exportcert -alias jmx -keystore "$KEYSTORE_FILE" -storepass "$KEYSTORE_PASSWORD" \
+    -rfc -file "$CERT_FILE" >/dev/null
+  chmod 644 "$CERT_FILE"
+
+  echo "===> Generated self-signed JMX TLS keystore at $KEYSTORE_FILE (CN=$JMX_TLS_HOSTNAME); public cert exported to $CERT_FILE for clients to trust"
 fi
