@@ -23,57 +23,32 @@ if [ "${SCHEMA_REGISTRY_JMX_REMOTE_ENABLE:-false}" = "true" ]; then
 
   # Remote JMX explicitly enabled — require authentication and read-only
   # authorization, otherwise any client on the network could invoke MBean
-  # operations. TLS is on by default too, since without it the password is
-  # sent in cleartext during the RMI handshake; set
-  # SCHEMA_REGISTRY_JMX_TLS_ENABLE=false to opt out (e.g. the network is
-  # already encrypted at another layer).
+  # operations
   export JMX_PORT=$SCHEMA_REGISTRY_JMX_PORT
 
   JMX_CONFIG_DIR="${SCHEMA_REGISTRY_JMX_CONFIG_DIR:-/etc/schema-registry/secrets}"
-  JMX_PASSWORD_FILE="$JMX_CONFIG_DIR/jmxremote.password"
-  JMX_ACCESS_FILE="$JMX_CONFIG_DIR/jmxremote.access"
+  JMX_PASSWORD_FILE="${SCHEMA_REGISTRY_JMX_PASSWORD_FILE:-$JMX_CONFIG_DIR/jmxremote.password}"
+  JMX_ACCESS_FILE="${SCHEMA_REGISTRY_JMX_ACCESS_FILE:-$JMX_CONFIG_DIR/jmxremote.access}"
+
+  if [ ! -f "$JMX_PASSWORD_FILE" ] || [ ! -f "$JMX_ACCESS_FILE" ]; then
+    if ! /etc/confluent/docker/setup-jmx-security.sh "$JMX_PASSWORD_FILE" "$JMX_ACCESS_FILE"; then
+      echo "Failed to generate JMX password/access files." >&2
+      exit 1
+    fi
+  fi
 
   # The JMX client needs to be able to connect to java.rmi.server.hostname.
   # The default for bridged n/w is the bridged IP so you will only be able to connect from another docker container.
   # For host n/w, this is the IP that the hostname on the host resolves to.
   #
   # If you have more that one n/w configured, hostname -i gives you all the IPs,
-  # the default is to pick the first IP (or network). setup-jmx-security.sh
-  # also uses this as the generated cert's CN.
+  # the default is to pick the first IP (or network).
   export SCHEMA_REGISTRY_JMX_HOSTNAME=${SCHEMA_REGISTRY_JMX_HOSTNAME:-$(hostname -i | cut -d" " -f1)}
-
-  JMX_SETUP_ARGS=("$JMX_PASSWORD_FILE" "$JMX_ACCESS_FILE")
-  JMX_NEEDS_SETUP=0
-  { [ ! -f "$JMX_PASSWORD_FILE" ] || [ ! -f "$JMX_ACCESS_FILE" ]; } && JMX_NEEDS_SETUP=1
-
-  if [ "${SCHEMA_REGISTRY_JMX_TLS_ENABLE:-true}" = "true" ]; then
-    # TLS needs its own RMI connector port; it can't share the registry port.
-    JMX_RMI_PORT="${SCHEMA_REGISTRY_JMX_RMI_PORT:-$((SCHEMA_REGISTRY_JMX_PORT + 1))}"
-    JMX_KEYSTORE="$JMX_CONFIG_DIR/jmxremote.keystore"
-    JMX_KEYSTORE_PASSWORD_FILE="$JMX_CONFIG_DIR/jmxremote.keystore.password"
-    JMX_CERT_FILE="$JMX_CONFIG_DIR/jmxremote.cert.pem"
-    JMX_SETUP_ARGS+=("$JMX_KEYSTORE" "$JMX_KEYSTORE_PASSWORD_FILE" "$JMX_CERT_FILE")
-    [ ! -f "$JMX_KEYSTORE" ] && JMX_NEEDS_SETUP=1
-  fi
-
-  if [ "$JMX_NEEDS_SETUP" = 1 ]; then
-    if ! /etc/confluent/docker/setup-jmx-security.sh "${JMX_SETUP_ARGS[@]}"; then
-      echo "Failed to generate JMX password/access/keystore files." >&2
-      exit 1
-    fi
-  fi
 
   # Appended last so these win on duplicate -D flags: Java takes the last
   # occurrence, so this always ends up authenticated/readonly even if
   # SCHEMA_REGISTRY_JMX_OPTS already set something else for JMX.
-  SCHEMA_REGISTRY_JMX_OPTS="${SCHEMA_REGISTRY_JMX_OPTS:-} -Dcom.sun.management.jmxremote -Djava.rmi.server.hostname=$SCHEMA_REGISTRY_JMX_HOSTNAME -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=true -Dcom.sun.management.jmxremote.password.file=$JMX_PASSWORD_FILE -Dcom.sun.management.jmxremote.access.file=$JMX_ACCESS_FILE"
-
-  if [ "${SCHEMA_REGISTRY_JMX_TLS_ENABLE:-true}" = "true" ]; then
-    JMX_KEYSTORE_PASSWORD="$(cat "$JMX_KEYSTORE_PASSWORD_FILE")"
-    SCHEMA_REGISTRY_JMX_OPTS="$SCHEMA_REGISTRY_JMX_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.rmi.port=$JMX_RMI_PORT -Dcom.sun.management.jmxremote.ssl=true -Dcom.sun.management.jmxremote.ssl.need.client.auth=false -Djavax.net.ssl.keyStore=$JMX_KEYSTORE -Djavax.net.ssl.keyStorePassword=$JMX_KEYSTORE_PASSWORD"
-  else
-    SCHEMA_REGISTRY_JMX_OPTS="$SCHEMA_REGISTRY_JMX_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.rmi.port=$JMX_PORT -Dcom.sun.management.jmxremote.ssl=false"
-  fi
+  SCHEMA_REGISTRY_JMX_OPTS="${SCHEMA_REGISTRY_JMX_OPTS:-} -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=$SCHEMA_REGISTRY_JMX_HOSTNAME -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.rmi.port=$JMX_PORT -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=true -Dcom.sun.management.jmxremote.password.file=$JMX_PASSWORD_FILE -Dcom.sun.management.jmxremote.access.file=$JMX_ACCESS_FILE"
 elif [ -z "$SCHEMA_REGISTRY_JMX_OPTS" ]; then
   # Default: local-only JMX. In-process monitoring (OTel agent,
   # JMX Prometheus exporter, etc.) continues to work since they

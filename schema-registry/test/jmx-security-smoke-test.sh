@@ -29,7 +29,6 @@ NET="${RUN_ID}-net"
 DEFAULT_CONTAINER="${RUN_ID}-default"
 REMOTE_CONTAINER="${RUN_ID}-remote"
 CONFLICT_CONTAINER="${RUN_ID}-conflict"
-TLS_OFF_CONTAINER="${RUN_ID}-tls-off"
 CLIENT_IMAGE="${RUN_ID}-jmxterm"
 WORKDIR="$(mktemp -d)"
 
@@ -41,7 +40,7 @@ fail() { echo "FAIL: $*"; FAILURES=$((FAILURES + 1)); }
 
 cleanup() {
   log "Cleaning up"
-  docker rm -f "$DEFAULT_CONTAINER" "$REMOTE_CONTAINER" "$CONFLICT_CONTAINER" "$TLS_OFF_CONTAINER" "${KAFKA_CONTAINER:-}" >/dev/null 2>&1 || true
+  docker rm -f "$DEFAULT_CONTAINER" "$REMOTE_CONTAINER" "$CONFLICT_CONTAINER" "${KAFKA_CONTAINER:-}" >/dev/null 2>&1 || true
   docker network rm "$NET" >/dev/null 2>&1 || true
   docker rmi "$CLIENT_IMAGE" >/dev/null 2>&1 || true
   rm -rf "$WORKDIR"
@@ -97,17 +96,6 @@ wait_for_ready() {
   return 1
 }
 
-# Remote JMX is TLS-only; import each container's self-signed cert into its
-# own truststore so jmxterm can verify it, and print the resulting -D flags.
-truststore_opts() {
-  local container="$1" name="$2"
-  docker exec "$container" cat /etc/schema-registry/secrets/jmxremote.cert.pem > "$WORKDIR/$name.cert.pem"
-  docker run --rm -v "$WORKDIR":/work "$CLIENT_IMAGE" \
-    keytool -importcert -alias jmx -file "/work/$name.cert.pem" -keystore "/work/$name.truststore" \
-    -storepass trustpass -noprompt >/dev/null
-  echo "-Djavax.net.ssl.trustStore=/work/$name.truststore -Djavax.net.ssl.trustStorePassword=trustpass"
-}
-
 common_env=(
   -e SCHEMA_REGISTRY_HOST_NAME=smoke-test
   -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS="PLAINTEXT://${KAFKA_CONTAINER}:9092"
@@ -150,34 +138,32 @@ else
   pass "a JMX password file was generated when remote JMX was enabled"
 fi
 
-REMOTE_TLS_OPTS="$(truststore_opts "$REMOTE_CONTAINER" remote)"
-
-no_creds=$(docker run --rm --network "$NET" -v "$WORKDIR":/work "$CLIENT_IMAGE" \
-  bash -c "echo beans | timeout 10 java $REMOTE_TLS_OPTS -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
+no_creds=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
+  bash -c "echo beans | timeout 10 java -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
 if echo "$no_creds" | grep -q "Credentials required"; then
   pass "remote JMX requires authentication when enabled"
 else
   fail "expected remote JMX to require credentials; got: $no_creds"
 fi
 
-wrong_creds=$(docker run --rm --network "$NET" -v "$WORKDIR":/work "$CLIENT_IMAGE" \
-  bash -c "echo beans | timeout 10 java $REMOTE_TLS_OPTS -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -u monitorRole -p wrong -n -v verbose" 2>&1 || true)
+wrong_creds=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
+  bash -c "echo beans | timeout 10 java -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -u monitorRole -p wrong -n -v verbose" 2>&1 || true)
 if echo "$wrong_creds" | grep -q "Invalid username or password"; then
   pass "remote JMX rejects an incorrect password"
 else
   fail "expected remote JMX to reject a wrong password; got: $wrong_creds"
 fi
 
-read_result=$(docker run --rm --network "$NET" -v "$WORKDIR":/work "$CLIENT_IMAGE" \
-  bash -c "echo 'get -b java.lang:type=Memory HeapMemoryUsage' | timeout 10 java $REMOTE_TLS_OPTS -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -u monitorRole -p $PASSWORD -n -v verbose" 2>&1 || true)
+read_result=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
+  bash -c "echo 'get -b java.lang:type=Memory HeapMemoryUsage' | timeout 10 java -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -u monitorRole -p $PASSWORD -n -v verbose" 2>&1 || true)
 if echo "$read_result" | grep -q "HeapMemoryUsage"; then
   pass "remote JMX allows a read with the generated credentials"
 else
   fail "expected a successful read with generated credentials; got: $read_result"
 fi
 
-write_result=$(docker run --rm --network "$NET" -v "$WORKDIR":/work "$CLIENT_IMAGE" \
-  bash -c "echo 'set -b java.lang:type=Threading ThreadContentionMonitoringEnabled true' | timeout 10 java $REMOTE_TLS_OPTS -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -u monitorRole -p $PASSWORD -n -v verbose" 2>&1 || true)
+write_result=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
+  bash -c "echo 'set -b java.lang:type=Threading ThreadContentionMonitoringEnabled true' | timeout 10 java -jar /jmxterm.jar -l ${REMOTE_CONTAINER}:9999 -u monitorRole -p $PASSWORD -n -v verbose" 2>&1 || true)
 if echo "$write_result" | grep -q "Access denied"; then
   pass "remote JMX enforces readonly access (attribute writes denied)"
 else
@@ -198,46 +184,12 @@ docker run -d --name "$CONFLICT_CONTAINER" --network "$NET" \
   "$IMAGE" >/dev/null
 wait_for_ready "$CONFLICT_CONTAINER"
 
-CONFLICT_TLS_OPTS="$(truststore_opts "$CONFLICT_CONTAINER" conflict)"
-
-conflict_no_creds=$(docker run --rm --network "$NET" -v "$WORKDIR":/work "$CLIENT_IMAGE" \
-  bash -c "echo beans | timeout 10 java $CONFLICT_TLS_OPTS -jar /jmxterm.jar -l ${CONFLICT_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
+conflict_no_creds=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
+  bash -c "echo beans | timeout 10 java -jar /jmxterm.jar -l ${CONFLICT_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
 if echo "$conflict_no_creds" | grep -q "Credentials required"; then
   pass "SCHEMA_REGISTRY_JMX_REMOTE_ENABLE still requires auth despite a conflicting SCHEMA_REGISTRY_JMX_OPTS"
 else
   fail "expected remote JMX to still require credentials despite conflicting SCHEMA_REGISTRY_JMX_OPTS; got: $conflict_no_creds"
-fi
-
-# Same hostname/Kafka cluster as the next container; leader election
-# rejects two live members with the same identity.
-docker rm -f "$CONFLICT_CONTAINER" >/dev/null 2>&1
-
-# --- Scenario 4: SCHEMA_REGISTRY_JMX_TLS_ENABLE=false opts out of TLS ---
-log "Starting container with SCHEMA_REGISTRY_JMX_TLS_ENABLE=false"
-docker run -d --name "$TLS_OFF_CONTAINER" --network "$NET" \
-  "${common_env[@]}" \
-  -e SCHEMA_REGISTRY_JMX_PORT=9999 \
-  -e SCHEMA_REGISTRY_JMX_REMOTE_ENABLE=true \
-  -e SCHEMA_REGISTRY_JMX_TLS_ENABLE=false \
-  "$IMAGE" >/dev/null
-wait_for_ready "$TLS_OFF_CONTAINER"
-
-TLS_OFF_PASSWORD=$(docker exec "$TLS_OFF_CONTAINER" grep '^monitorRole' /etc/schema-registry/secrets/jmxremote.password | awk '{print $2}')
-
-tls_off_no_creds=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
-  bash -c "echo beans | timeout 10 java -jar /jmxterm.jar -l ${TLS_OFF_CONTAINER}:9999 -n -v verbose" 2>&1 || true)
-if echo "$tls_off_no_creds" | grep -q "Credentials required"; then
-  pass "SCHEMA_REGISTRY_JMX_TLS_ENABLE=false still requires authentication"
-else
-  fail "expected remote JMX to still require credentials with TLS disabled; got: $tls_off_no_creds"
-fi
-
-tls_off_read_result=$(docker run --rm --network "$NET" "$CLIENT_IMAGE" \
-  bash -c "echo 'get -b java.lang:type=Memory HeapMemoryUsage' | timeout 10 java -jar /jmxterm.jar -l ${TLS_OFF_CONTAINER}:9999 -u monitorRole -p $TLS_OFF_PASSWORD -n -v verbose" 2>&1 || true)
-if echo "$tls_off_read_result" | grep -q "HeapMemoryUsage"; then
-  pass "SCHEMA_REGISTRY_JMX_TLS_ENABLE=false allows a plain (non-TLS) authenticated connection"
-else
-  fail "expected a successful plain-JMX read with TLS disabled; got: $tls_off_read_result"
 fi
 
 echo
