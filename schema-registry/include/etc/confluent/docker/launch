@@ -23,7 +23,10 @@ if [ "${SCHEMA_REGISTRY_JMX_REMOTE_ENABLE:-false}" = "true" ]; then
 
   # Remote JMX explicitly enabled — require authentication and read-only
   # authorization, otherwise any client on the network could invoke MBean
-  # operations. TLS is on by default, off with SCHEMA_REGISTRY_JMX_TLS_ENABLE=false
+  # operations. TLS is on by default too, since without it the password is
+  # sent in cleartext during the RMI handshake; set
+  # SCHEMA_REGISTRY_JMX_TLS_ENABLE=false to opt out (e.g. the network is
+  # already encrypted at another layer).
   export JMX_PORT=$SCHEMA_REGISTRY_JMX_PORT
 
   JMX_CONFIG_DIR="${SCHEMA_REGISTRY_JMX_CONFIG_DIR:-/etc/schema-registry/secrets}"
