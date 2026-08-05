@@ -14,7 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo "DEBUG: configure started, pid=$$" >&2
+
 . /etc/confluent/docker/bash-config
+
+echo "DEBUG: bash-config sourced" >&2
 
 # Some CI environments have seen dub hang indefinitely with no output; bound
 # each call so a hang fails fast and gets a retry instead of silently
