@@ -95,8 +95,9 @@ wait_for_ready() {
   if docker exec "$container" ub sr-ready localhost 8081 120 >/dev/null 2>&1; then
     return 0
   fi
-  log "Container $container did not become ready in time; logs:"
-  docker logs "$container" 2>&1 | tail -30
+  log "Container $container state: $(docker inspect --format '{{.State.Status}} exitcode={{.State.ExitCode}}' "$container" 2>&1)"
+  log "Container $container did not become ready in time; full logs:"
+  docker logs "$container" 2>&1
   return 1
 }
 
