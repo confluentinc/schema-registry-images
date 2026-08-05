@@ -66,6 +66,7 @@
                 </configuration>
             </plugin>
 
+            <!-- Rebind so the image exists before the smoke test below (both default to the package phase). -->
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
