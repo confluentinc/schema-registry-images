@@ -87,11 +87,18 @@ done
 log "Kafka broker is ready"
 
 wait_for_ready() {
-  local container="$1" output
-  if output=$(docker exec "$container" cub sr-ready localhost 8081 120 2>&1); then
+  local container="$1" output sr_ready_cmd
+  # Older base images (cub/dub) vs newer ones (ub) name this differently;
+  # detect which is actually present rather than hardcoding one.
+  if docker exec "$container" sh -c 'command -v ub' >/dev/null 2>&1; then
+    sr_ready_cmd=ub
+  else
+    sr_ready_cmd=cub
+  fi
+  if output=$(docker exec "$container" "$sr_ready_cmd" sr-ready localhost 8081 120 2>&1); then
     return 0
   fi
-  log "cub sr-ready output: $output"
+  log "$sr_ready_cmd sr-ready output: $output"
   log "Container $container state: $(docker inspect --format '{{.State.Status}} exitcode={{.State.ExitCode}}' "$container" 2>&1)"
   log "Container $container did not become ready in time; full logs:"
   docker logs "$container" 2>&1
