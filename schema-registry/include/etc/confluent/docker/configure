@@ -14,31 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "DEBUG: configure started, pid=$$" >&2
-set -x
-
 . /etc/confluent/docker/bash-config
 
-echo "DEBUG: bash-config sourced" >&2
-
-# Some CI environments have seen dub hang indefinitely with no output; bound
-# each call so a hang fails fast and gets a retry instead of silently
-# consuming the entire container-readiness timeout budget.
-retry_dub() {
-  local tries=3 timeout_secs=20 i
-  for ((i = 1; i <= tries; i++)); do
-    if timeout -k 5 "$timeout_secs" dub "$@"; then
-      return 0
-    fi
-    echo "dub $* did not complete within ${timeout_secs}s (attempt $i/$tries), retrying ..." >&2
-  done
-  echo "dub $* failed after $tries attempts" >&2
-  return 1
-}
-
-retry_dub ensure-atleast-one SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
-retry_dub ensure SCHEMA_REGISTRY_HOST_NAME
-retry_dub path /etc/"${COMPONENT}"/ writable
+dub ensure-atleast-one SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+dub ensure SCHEMA_REGISTRY_HOST_NAME
+dub path /etc/"${COMPONENT}"/ writable
 
 if [[ -n "${SCHEMA_REGISTRY_PORT-}" ]]
 then
@@ -54,6 +34,6 @@ then
   fi
 fi
 
-retry_dub template "/etc/confluent/docker/${COMPONENT}.properties.template" "/etc/${COMPONENT}/${COMPONENT}.properties"
-retry_dub template "/etc/confluent/docker/log4j.properties.template" "/etc/${COMPONENT}/log4j.properties"
-retry_dub template "/etc/confluent/docker/admin.properties.template" "/etc/${COMPONENT}/admin.properties"
+dub template "/etc/confluent/docker/${COMPONENT}.properties.template" "/etc/${COMPONENT}/${COMPONENT}.properties"
+dub template "/etc/confluent/docker/log4j.properties.template" "/etc/${COMPONENT}/log4j.properties"
+dub template "/etc/confluent/docker/admin.properties.template" "/etc/${COMPONENT}/admin.properties"

@@ -91,10 +91,11 @@ done
 log "Kafka broker is ready"
 
 wait_for_ready() {
-  local container="$1"
-  if docker exec "$container" ub sr-ready localhost 8081 120 >/dev/null 2>&1; then
+  local container="$1" output
+  if output=$(docker exec "$container" cub sr-ready localhost 8081 120 2>&1); then
     return 0
   fi
+  log "cub sr-ready output: $output"
   log "Container $container state: $(docker inspect --format '{{.State.Status}} exitcode={{.State.ExitCode}}' "$container" 2>&1)"
   log "Container $container did not become ready in time; full logs:"
   docker logs "$container" 2>&1
