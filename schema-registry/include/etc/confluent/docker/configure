@@ -22,7 +22,7 @@
 retry_dub() {
   local tries=3 timeout_secs=20 i
   for ((i = 1; i <= tries; i++)); do
-    if timeout "$timeout_secs" dub "$@"; then
+    if timeout -k 5 "$timeout_secs" dub "$@"; then
       return 0
     fi
     echo "dub $* did not complete within ${timeout_secs}s (attempt $i/$tries), retrying ..." >&2
