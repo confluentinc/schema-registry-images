@@ -24,6 +24,10 @@ set -euo pipefail
 
 IMAGE="${1:?usage: $0 <schema-registry-image>}"
 
+echo "DEBUG: expected image tag: $IMAGE"
+echo "DEBUG: local images matching cp-schema-registry:"
+docker images | grep -i cp-schema-registry || echo "DEBUG: (none found locally)"
+
 RUN_ID="jmx-smoke-$$"
 NET="${RUN_ID}-net"
 DEFAULT_CONTAINER="${RUN_ID}-default"
