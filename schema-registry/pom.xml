@@ -55,6 +55,45 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Rebind so the image exists before the smoke test below (both default to the package phase). -->
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Smoke-tests JMX auth/access-control against the image dockerfile-maven-plugin just built. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>jmx-security-smoke-test</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${docker.skip-build}</skip>
+                            <executable>bash</executable>
+                            <arguments>
+                                <argument>${project.basedir}/test/jmx-security-smoke-test.sh</argument>
+                                <argument>${docker.registry}confluentinc/cp-schema-registry:${docker.tag}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
