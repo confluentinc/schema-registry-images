@@ -15,6 +15,7 @@
 # limitations under the License.
 
 echo "DEBUG: configure started, pid=$$" >&2
+set -x
 
 . /etc/confluent/docker/bash-config
 
