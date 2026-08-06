@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.confluent.schema-registry-images</groupId>
         <artifactId>schema-registry-images-parent</artifactId>
-        <version>8.2.3-0</version>
+        <version>8.3.1-0</version>
     </parent>
 
     <groupId>io.confluent.schema-registry-images</groupId>
@@ -56,6 +56,16 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <configuration>
+                    <buildArgs>
+                        <UBI9_VERSION>${ubi9.image.version}</UBI9_VERSION>
+                    </buildArgs>
+                </configuration>
+            </plugin>
+
             <!-- Rebind so the image exists before the smoke test below (both default to the package phase). -->
             <plugin>
                 <groupId>io.fabric8</groupId>
@@ -68,6 +78,17 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <images>
+                        <image>
+                            <build>
+                                <args>
+                                    <UBI9_VERSION>${ubi9.image.version}</UBI9_VERSION>
+                                </args>
+                            </build>
+                        </image>
+                    </images>
+                </configuration>
             </plugin>
 
             <!-- Smoke-tests JMX auth/access-control against the image docker-maven-plugin just built. -->
