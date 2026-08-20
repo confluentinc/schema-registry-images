@@ -45,7 +45,10 @@ global_job_config:
       - export DOCKER_PROD_REGISTRY="519856050701.dkr.ecr.us-west-2.amazonaws.com/docker/prod/"
       - export PROMOTED_TAG_PREFIX="$CONFLUENT_VERSION-$IMAGE_REVISION"
       - if [[ ! "$PACKAGING_BUILD_NUMBER" ]]; then export $PACKAGING_BUILD_NUMBER="latest"; fi
-      - docker login --username $DOCKERHUB_USER --password $DOCKERHUB_APIKEY
+      # Fetch this project's repo-scoped DockerHub write token at publish time, rather
+      # than relying on a broad org-wide token exported into every job. Sourced, not
+      # executed: it exports credentials into this shell.
+      - . get-auth-token dockerhub
       - export AMD_ARCH=.amd64
       - export ARM_ARCH=.arm64
       - export S390X_ARCH=.s390x
