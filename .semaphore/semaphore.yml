@@ -80,8 +80,12 @@ global_job_config:
         fi
       - export DOCKER_DEV_REGISTRY="519856050701.dkr.ecr.us-west-2.amazonaws.com/docker/dev/"
       - export DOCKER_PROD_REGISTRY="519856050701.dkr.ecr.us-west-2.amazonaws.com/docker/prod/"
-      - export DOCKER_UPSTREAM_REGISTRY=$DOCKER_PROD_REGISTRY
-      - export LATEST_TAG=$BRANCH_TAG-latest
+      # POC-only override for CPBR-3841 jmx_prometheus_javaagent 1.6.0 testing - builds against
+      # common-docker PR #2343's base image instead of the real published one. Revert before merge;
+      # this PR is not meant to be merged. (semaphore.yml is the file the PR pipeline actually runs -
+      # cp_dockerfile_build.yml, edited first, turned out to be a separate/unused pipeline for this trigger.)
+      - export DOCKER_UPSTREAM_REGISTRY=$DOCKER_DEV_REGISTRY
+      - export LATEST_TAG="dev-master-7fec7693"
       - export DOCKER_UPSTREAM_TAG="$LATEST_TAG"
       - export DOCKER_REPOS="confluentinc/cp-schema-registry"
       - export COMMUNITY_DOCKER_REPOS=""
