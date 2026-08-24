@@ -18,9 +18,8 @@ ARG DOCKER_UPSTREAM_TAG=ubi9-latest
 ARG UBI9_VERSION
 
 # Stage 1: Get package_dedupe tool from base image
-# POC-only for CPBR-3841 jmx 1.6.0 test: hardcoded to common-docker PR #2343's dev base image.
-# Revert before merge; this PR is not meant to be merged.
-FROM 519856050701.dkr.ecr.us-west-2.amazonaws.com/docker/dev/confluentinc/cp-base-java-micro:dev-master-7fec7693-ubi9.amd64 AS tools
+# CPBR-3841 control test: no functional change, checking normal PR CI behavior.
+FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java-micro:${DOCKER_UPSTREAM_TAG} AS tools
 
 # Stage 2: Install packages using ubi9 with dnf to /microdir
 FROM registry.access.redhat.com/ubi9:${UBI9_VERSION} AS builder
@@ -66,9 +65,7 @@ RUN echo "===> Installing schema-registry packages to /microdir with dnf" \
     && rm -rf /microdir/dev/* /microdir/proc/* /microdir/sys/*
 
 # Stage 3: Final image using cp-base-java-micro
-# POC-only for CPBR-3841 jmx 1.6.0 test: hardcoded to common-docker PR #2343's dev base image.
-# Revert before merge; this PR is not meant to be merged.
-FROM 519856050701.dkr.ecr.us-west-2.amazonaws.com/docker/dev/confluentinc/cp-base-java-micro:dev-master-7fec7693-ubi9.amd64
+FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java-micro:${DOCKER_UPSTREAM_TAG}
 
 ENV COMPONENT=schema-registry
 
