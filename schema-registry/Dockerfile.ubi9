@@ -18,6 +18,7 @@ ARG DOCKER_UPSTREAM_TAG=ubi9-latest
 ARG UBI9_VERSION
 
 # Stage 1: Get package_dedupe tool from base image
+# CPBR-3841 control test: no functional change, checking normal PR CI behavior.
 FROM ${DOCKER_UPSTREAM_REGISTRY}confluentinc/cp-base-java-micro:${DOCKER_UPSTREAM_TAG} AS tools
 
 # Stage 2: Install packages using ubi9 with dnf to /microdir
