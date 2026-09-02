@@ -74,6 +74,9 @@ semaphore:
             options:
               - 'True'
               - 'False'
+cp_dockerfile:
+  s390x_docker_repos: ['confluentinc/cp-schema-registry']
+  s390x_maven_modules: ['schema-registry']
 code_artifact:
   enable: true
   package_paths:

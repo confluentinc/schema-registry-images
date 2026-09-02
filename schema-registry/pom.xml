@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.confluent.schema-registry-images</groupId>
         <artifactId>schema-registry-images-parent</artifactId>
-        <version>8.1.6-0</version>
+        <version>8.2.4-0</version>
     </parent>
 
     <groupId>io.confluent.schema-registry-images</groupId>
@@ -58,11 +58,10 @@
 
             <!-- Rebind so the image exists before the smoke test below (both default to the package phase). -->
             <plugin>
-                <groupId>com.spotify</groupId>
-                <artifactId>dockerfile-maven-plugin</artifactId>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>package</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>build</goal>
@@ -71,7 +70,7 @@
                 </executions>
             </plugin>
 
-            <!-- Smoke-tests JMX auth/access-control against the image dockerfile-maven-plugin just built. -->
+            <!-- Smoke-tests JMX auth/access-control against the image docker-maven-plugin just built. -->
             <!-- Do not pin the version: inherit whatever common manages. Newer versions re-verify
                  cached plugin dependencies against mirror repos only (not the profile-defined staging
                  bucket), so licenses:X.Y.Z can't be fetched and the build breaks. See common's
