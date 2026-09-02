@@ -92,10 +92,13 @@
             </plugin>
 
             <!-- Smoke-tests JMX auth/access-control against the image docker-maven-plugin just built. -->
+            <!-- Do not pin the version: inherit whatever common manages. Newer versions re-verify
+                 cached plugin dependencies against mirror repos only (not the profile-defined staging
+                 bucket), so licenses:X.Y.Z can't be fetched and the build breaks. See common's
+                 exec-maven-plugin note. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>jmx-security-smoke-test</id>
