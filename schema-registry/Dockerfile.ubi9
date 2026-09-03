@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# POC-only (CPBR-3841): re-testing base-image override against common-docker PR #2343's jmx 1.6.0 build.
 ARG DOCKER_UPSTREAM_REGISTRY
 ARG DOCKER_UPSTREAM_TAG=ubi9-latest
 ARG UBI9_VERSION
