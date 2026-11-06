@@ -33,6 +33,7 @@
     <properties>
         <docker.skip-build>false</docker.skip-build>
         <docker.skip-test>true</docker.skip-test>
+        <jmx-smoke-test.skip>${docker.skip-build}</jmx-smoke-test.skip>
     </properties>
 
     <dependencies>
@@ -86,7 +87,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <skip>${docker.skip-build}</skip>
+                            <skip>${jmx-smoke-test.skip}</skip>
                             <executable>bash</executable>
                             <arguments>
                                 <argument>${project.basedir}/test/jmx-security-smoke-test.sh</argument>
@@ -98,4 +99,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- The smoke test's broker image, confluentinc/cp-kafka, has no linux/s390x build. -->
+        <profile>
+            <id>skip-jmx-smoke-test-on-s390x</id>
+            <activation>
+                <os>
+                    <arch>s390x</arch>
+                </os>
+            </activation>
+            <properties>
+                <jmx-smoke-test.skip>true</jmx-smoke-test.skip>
+            </properties>
+        </profile>
+    </profiles>
 </project>
