@@ -13,16 +13,12 @@ Configuration:
       AppenderRef:
         - ref: STDOUT
     Logger:
-      - name: "org.reflections"
-        level: "ERROR"
-        AppenderRef:
-          - ref: STDOUT
-{{- if getEnv "SCHEMA_REGISTRY_LOG4J_LOGGERS" "" }}
-{{- $loggers := parseLog4jLoggers (getEnv "SCHEMA_REGISTRY_LOG4J_LOGGERS" "") }}
+{{- $defaultLoggersStr := "org.reflections=ERROR" -}}
+{{- $defaultLoggers := splitToMapDefaults "," $defaultLoggersStr "" -}}
+{{- $loggers := parseLog4jLoggers (getEnv "SCHEMA_REGISTRY_LOG4J_LOGGERS" "") $defaultLoggers -}}
 {{- range $k, $v := $loggers }}
       - name: "{{ $k }}"
         level: "{{ $v }}"
         AppenderRef:
           - ref: STDOUT
-{{- end }}
 {{- end }}
